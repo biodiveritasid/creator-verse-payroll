@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 
@@ -20,7 +19,6 @@ export default function Auth() {
     email: "",
     password: "",
     name: "",
-    role: "CREATOR",
   });
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,7 +45,7 @@ export default function Auth() {
       signupData.email,
       signupData.password,
       signupData.name,
-      signupData.role
+      "CREATOR" // Default role for public registration
     );
 
     if (error) {
@@ -153,24 +151,9 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">Role</Label>
-                  <Select
-                    value={signupData.role}
-                    onValueChange={(value) =>
-                      setSignupData({ ...signupData, role: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CREATOR">Creator</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="INVESTOR">Investor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Akun baru akan terdaftar sebagai Creator. Admin dapat mengubah role melalui panel admin.
+                </p>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Loading..." : "Daftar"}
                 </Button>
