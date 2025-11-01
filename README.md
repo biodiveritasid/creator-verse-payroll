@@ -1,73 +1,50 @@
-# Welcome to your Lovable project
+# Creator‑Verse Payroll
 
-## Project info
+Payroll & attendance app for creator teams. Built with React + Vite, Firebase (Auth/Firestore/Storage), and shadcn/ui.
 
-**URL**: https://lovable.dev/projects/7e811407-8f5e-41e5-8685-127bef9d87db
+## Features (MVP)
+- Role-based access: Admin, Investor (read-only), Creator
+- Attendance: check-in/out with device fingerprint & geo-approx (optional)
+- Timesheet & monthly hour target (progressive slab: min 130h)
+- Payroll: base + allowances + dynamic incentives (no deductions; "protata with flag" policy)
+- Expense proofs (image/pdf) & approvals
+- Dashboard: GMV, commissions, expenses, profit, remaining capital
+- Leaderboard by commissions
 
-## How can I edit this code?
+## Tech
+- React + Vite + TypeScript
+- Firebase Auth, Firestore, Storage, Cloud Functions
+- UI: Tailwind + shadcn/ui + lucide-react
 
-There are several ways of editing your application.
+## Dev Quickstart
+```bash
+# 1) Install
+pm i
 
-**Use Lovable**
+# 2) Env
+cp .env.example .env
+# Fill Firebase keys + optional MAPS_API_KEY
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7e811407-8f5e-41e5-8685-127bef9d87db) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 3) Run
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Firestore Schema (draft)
+```.yaml
+users: {
+  uid, name, email, role: oneOf("ADMIN", "INVESTOR", "CREATOR"),
+  createdAt,
+}
+shifts: { id, userId, date, start, end, deviceHash, geo? }
+reports: { id, userId, date, gmv, commission, notes }
+expenses: { id, byUserId, date, amount, category, note, proofUrl, status: PENDING|APPROVED|REJECTED }
+payroll: { id, userId, month, base, allowance, incentive, total, hours, slabMet: bool }
+settings: { id, progressive: { minHours:130 }, flags: { protata:true } }
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts
+- `npm run lint`
+- `npm run build`
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7e811407-8f5e-41e5-8685-127bef9d87db) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## License
+MIT
