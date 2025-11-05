@@ -182,6 +182,39 @@ export type Database = {
         }
         Relationships: []
       }
+      penjualan_harian: {
+        Row: {
+          commission_gross: number
+          created_at: string
+          date: string
+          gmv: number
+          id: string
+          source: Database["public"]["Enums"]["sales_source"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_gross?: number
+          created_at?: string
+          date?: string
+          gmv?: number
+          id?: string
+          source?: Database["public"]["Enums"]["sales_source"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_gross?: number
+          created_at?: string
+          date?: string
+          gmv?: number
+          id?: string
+          source?: Database["public"]["Enums"]["sales_source"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           base_salary: number | null
@@ -221,42 +254,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
           tiktok_account?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      sales_bulanan: {
-        Row: {
-          commission_gross: number
-          created_at: string
-          gmv: number
-          id: string
-          month: string
-          orders: number
-          source: Database["public"]["Enums"]["sales_source"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          commission_gross?: number
-          created_at?: string
-          gmv?: number
-          id?: string
-          month: string
-          orders?: number
-          source?: Database["public"]["Enums"]["sales_source"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          commission_gross?: number
-          created_at?: string
-          gmv?: number
-          id?: string
-          month?: string
-          orders?: number
-          source?: Database["public"]["Enums"]["sales_source"]
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

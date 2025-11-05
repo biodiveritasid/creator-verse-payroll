@@ -13,10 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 interface SalesData {
   id: string;
   user_id: string;
-  month: string;
+  date: string;
   source: "TIKTOK" | "SHOPEE";
   gmv: number;
-  orders: number;
   commission_gross: number;
   profiles?: {
     name: string;
@@ -33,39 +32,45 @@ export default function Sales() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [formData, setFormData] = useState({
-    user_id: "",
-    month: "",
+    date: new Date().toISOString().split('T')[0],
     source: "TIKTOK" as "TIKTOK" | "SHOPEE",
     gmv: "",
-    orders: "",
     commission_gross: ""
   });
   const { toast } = useToast();
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchData();
   }, []);
 
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      setCurrentUser(profile);
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [salesResponse, creatorsResponse, profilesResponse] = await Promise.all([
-        supabase
-          .from("sales_bulanan")
-          .select("*")
-          .order("month", { ascending: false }),
-        supabase
-          .from("profiles")
-          .select("id, name")
-          .eq("role", "CREATOR")
-          .eq("status", "ACTIVE"),
-        supabase
-          .from("profiles")
-          .select("id, name")
-      ]);
+      const salesResponse = await supabase
+        .from("penjualan_harian")
+        .select("*")
+        .order("date", { ascending: false });
 
       if (salesResponse.error) throw salesResponse.error;
-      if (creatorsResponse.error) throw creatorsResponse.error;
+
+      const profilesResponse = await supabase
+        .from("profiles")
+        .select("id, name");
+
       if (profilesResponse.error) throw profilesResponse.error;
 
       // Manually join sales data with profiles
@@ -76,7 +81,6 @@ export default function Sales() {
       })) || [];
 
       setSalesData(salesWithProfiles);
-      setCreators(creatorsResponse.data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -92,14 +96,16 @@ export default function Sales() {
     e.preventDefault();
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { error } = await supabase
-        .from("sales_bulanan")
+        .from("penjualan_harian")
         .insert({
-          user_id: formData.user_id,
-          month: formData.month,
+          user_id: user.id,
+          date: formData.date,
           source: formData.source,
           gmv: parseFloat(formData.gmv),
-          orders: parseInt(formData.orders),
           commission_gross: parseFloat(formData.commission_gross)
         });
 
@@ -107,16 +113,14 @@ export default function Sales() {
 
       toast({
         title: "Berhasil",
-        description: "Data sales berhasil ditambahkan"
+        description: "Data penjualan berhasil ditambahkan"
       });
 
       setDialogOpen(false);
       setFormData({
-        user_id: "",
-        month: "",
+        date: new Date().toISOString().split('T')[0],
         source: "TIKTOK",
         gmv: "",
-        orders: "",
         commission_gross: ""
       });
       fetchData();
@@ -137,44 +141,36 @@ export default function Sales() {
     }).format(value);
   };
 
-  const formatMonth = (month: string) => {
-    const [year, monthNum] = month.split("-");
-    const monthNames = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
-    return `${monthNames[parseInt(monthNum) - 1]} ${year}`;
+  const formatDate = (date: string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString("id-ID", { 
+      day: "numeric", 
+      month: "long", 
+      year: "numeric" 
+    });
   };
 
   const totalGMV = salesData.reduce((sum, s) => sum + s.gmv, 0);
-  const totalOrders = salesData.reduce((sum, s) => sum + s.orders, 0);
   const totalCommission = salesData.reduce((sum, s) => sum + s.commission_gross, 0);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Data Sales</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Penjualan Harian</h1>
         <p className="text-muted-foreground mt-1">
-          Kelola dan import data sales bulanan kreator.
+          {currentUser?.role === "ADMIN" 
+            ? "Lihat laporan penjualan harian dari semua kreator." 
+            : "Input laporan penjualan harian Anda."}
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total GMV</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalGMV)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalOrders.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -192,54 +188,40 @@ export default function Sales() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Data Sales Bulanan</CardTitle>
-              <CardDescription>Riwayat sales semua kreator</CardDescription>
+              <CardTitle>Laporan Penjualan Harian</CardTitle>
+              <CardDescription>
+                {currentUser?.role === "ADMIN" 
+                  ? "Riwayat penjualan semua kreator" 
+                  : "Riwayat penjualan Anda"}
+              </CardDescription>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Tambah Data Sales
+                  Tambah Laporan
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Tambah Data Sales</DialogTitle>
+                  <DialogTitle>Tambah Laporan Penjualan</DialogTitle>
                   <DialogDescription>
-                    Input data sales bulanan kreator
+                    Input laporan penjualan harian
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="user_id">Kreator</Label>
-                    <Select
-                      value={formData.user_id}
-                      onValueChange={(value) => setFormData({ ...formData, user_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih kreator" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {creators.map((creator) => (
-                          <SelectItem key={creator.id} value={creator.id}>
-                            {creator.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="month">Bulan</Label>
+                    <Label htmlFor="date">Tanggal</Label>
                     <Input
-                      id="month"
-                      type="month"
-                      value={formData.month}
-                      onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="source">Sumber</Label>
+                    <Label htmlFor="source">Platform</Label>
                     <Select
                       value={formData.source}
                       onValueChange={(value: "TIKTOK" | "SHOPEE") => 
@@ -266,17 +248,7 @@ export default function Sales() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="orders">Jumlah Orders</Label>
-                    <Input
-                      id="orders"
-                      type="number"
-                      value={formData.orders}
-                      onChange={(e) => setFormData({ ...formData, orders: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="commission_gross">Komisi Gross (IDR)</Label>
+                    <Label htmlFor="commission_gross">Komisi (IDR)</Label>
                     <Input
                       id="commission_gross"
                       type="number"
@@ -296,30 +268,30 @@ export default function Sales() {
             <p className="text-muted-foreground text-center py-8">Loading...</p>
           ) : salesData.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              Belum ada data sales. Mulai tambahkan data sales bulanan!
+              Belum ada data penjualan. Mulai tambahkan laporan penjualan harian!
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kreator</TableHead>
-                  <TableHead>Bulan</TableHead>
-                  <TableHead>Sumber</TableHead>
+                  {currentUser?.role === "ADMIN" && <TableHead>Kreator</TableHead>}
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Platform</TableHead>
                   <TableHead className="text-right">GMV</TableHead>
-                  <TableHead className="text-right">Orders</TableHead>
                   <TableHead className="text-right">Komisi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {salesData.map((sale) => (
                   <TableRow key={sale.id}>
-                    <TableCell className="font-medium">
-                      {sale.profiles?.name || "-"}
-                    </TableCell>
-                    <TableCell>{formatMonth(sale.month)}</TableCell>
+                    {currentUser?.role === "ADMIN" && (
+                      <TableCell className="font-medium">
+                        {sale.profiles?.name || "-"}
+                      </TableCell>
+                    )}
+                    <TableCell>{formatDate(sale.date)}</TableCell>
                     <TableCell>{sale.source}</TableCell>
                     <TableCell className="text-right">{formatCurrency(sale.gmv)}</TableCell>
-                    <TableCell className="text-right">{sale.orders.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{formatCurrency(sale.commission_gross)}</TableCell>
                   </TableRow>
                 ))}

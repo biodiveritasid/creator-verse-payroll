@@ -190,13 +190,16 @@ export default function Payroll() {
         const totalMinutes = sessions?.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
 
         const { data: salesData, error: salesError } = await supabase
-          .from("sales_bulanan")
+          .from("penjualan_harian")
           .select("*")
           .eq("user_id", creator.id)
-          .eq("month", monthKey)
-          .maybeSingle();
+          .gte("date", period.start)
+          .lte("date", period.end);
 
         if (salesError) throw salesError;
+        
+        const totalGmv = salesData?.reduce((sum, s) => sum + (s.gmv || 0), 0) || 0;
+        const totalCommission = salesData?.reduce((sum, s) => sum + (s.commission_gross || 0), 0) || 0;
 
         const achievementRatio = totalMinutes / targetMinutesMonthly;
         const clampedRatio = Math.max(
@@ -207,10 +210,10 @@ export default function Payroll() {
         const baseSalaryAdjusted = Math.round(baseSalary * clampedRatio);
 
         let bonusCommission = 0;
-        if (salesData && salesData.gmv > 0) {
+        if (totalGmv > 0) {
           bonusCommission = calculateCommissionBonus(
-            salesData.gmv,
-            salesData.commission_gross,
+            totalGmv,
+            totalCommission,
             commissionSlabs
           );
         }
