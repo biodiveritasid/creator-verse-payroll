@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
     title: "Sesi Live",
     href: "/sesi-live",
     icon: Clock,
-    roles: ["CREATOR"],
+    roles: ["CREATOR", "ADMIN"],
   },
   {
     title: "Payroll",
@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
     title: "Konten",
     href: "/konten",
     icon: FileText,
-    roles: ["CREATOR"],
+    roles: ["CREATOR", "ADMIN"],
   },
   {
     title: "Konfigurasi",
@@ -68,8 +68,8 @@ const navItems: NavItem[] = [
     roles: ["ADMIN"],
   },
   {
-    title: "Investor",
-    href: "/investor",
+    title: "Keuangan",
+    href: "/keuangan",
     icon: TrendingUp,
     roles: ["ADMIN", "INVESTOR"],
   },

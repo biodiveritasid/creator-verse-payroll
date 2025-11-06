@@ -14,7 +14,7 @@ import Kreator from "./pages/Kreator";
 import Sales from "./pages/Sales";
 import Konten from "./pages/Konten";
 import Konfigurasi from "./pages/Konfigurasi";
-import Investor from "./pages/Investor";
+import Keuangan from "./pages/Keuangan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,7 +41,7 @@ const App = () => (
             <Route
               path="/sesi-live"
               element={
-                <ProtectedRoute allowedRoles={["CREATOR"]}>
+                <ProtectedRoute allowedRoles={["CREATOR", "ADMIN"]}>
                   <DashboardLayout>
                     <SesiLive />
                   </DashboardLayout>
@@ -81,7 +81,7 @@ const App = () => (
             <Route
               path="/konten"
               element={
-                <ProtectedRoute allowedRoles={["CREATOR"]}>
+                <ProtectedRoute allowedRoles={["CREATOR", "ADMIN"]}>
                   <DashboardLayout>
                     <Konten />
                   </DashboardLayout>
@@ -99,11 +99,11 @@ const App = () => (
               }
             />
             <Route
-              path="/investor"
+              path="/keuangan"
               element={
                 <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
-                    <Investor />
+                    <Keuangan />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

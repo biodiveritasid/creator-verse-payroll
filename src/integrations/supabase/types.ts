@@ -276,7 +276,7 @@ export type Database = {
           date: string
           duration_minutes?: number | null
           id?: string
-          shift: Database["public"]["Enums"]["shift_type"]
+          shift?: Database["public"]["Enums"]["shift_type"]
           updated_at?: string
           user_id: string
         }
@@ -329,7 +329,7 @@ export type Database = {
       ledger_type: "CAPITAL_IN" | "CAPITAL_OUT" | "PROFIT_SHARE"
       payout_status: "DRAFT" | "APPROVED" | "PAID"
       sales_source: "TIKTOK" | "SHOPEE"
-      shift_type: "MORNING" | "AFTERNOON"
+      shift_type: "PAGI" | "SIANG" | "MALAM"
       user_status: "ACTIVE" | "PAUSED"
     }
     CompositeTypes: {
@@ -462,7 +462,7 @@ export const Constants = {
       ledger_type: ["CAPITAL_IN", "CAPITAL_OUT", "PROFIT_SHARE"],
       payout_status: ["DRAFT", "APPROVED", "PAID"],
       sales_source: ["TIKTOK", "SHOPEE"],
-      shift_type: ["MORNING", "AFTERNOON"],
+      shift_type: ["PAGI", "SIANG", "MALAM"],
       user_status: ["ACTIVE", "PAUSED"],
     },
   },

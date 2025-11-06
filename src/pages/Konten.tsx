@@ -18,6 +18,9 @@ interface ContentLog {
   post_number: number;
   is_counted: boolean;
   user_id: string;
+  profiles?: {
+    name: string;
+  };
 }
 
 export default function Konten() {
@@ -31,7 +34,7 @@ export default function Konten() {
     is_counted: true
   });
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -41,14 +44,20 @@ export default function Konten() {
 
   const fetchContentLogs = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("content_logs")
-        .select("*")
-        .eq("user_id", user?.id)
+        .select("*, profiles(name)")
         .order("date", { ascending: false });
 
+      // If creator, only show their own logs
+      if (userRole === "CREATOR") {
+        query = query.eq("user_id", user?.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
-      setContentLogs(data || []);
+      setContentLogs(data as any || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -113,83 +122,88 @@ export default function Konten() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Log Konten</h1>
         <p className="text-muted-foreground mt-1">
-          Catat postingan konten Anda untuk tracking performa.
+          {userRole === "ADMIN" 
+            ? "Lihat semua laporan konten dari kreator"
+            : "Catat postingan konten Anda untuk tracking performa"
+          }
         </p>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Tambah Log Konten</CardTitle>
-              <CardDescription>Catat link postingan konten Anda</CardDescription>
+      {userRole === "CREATOR" && (
+        <Card className="shadow-md">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Tambah Log Konten</CardTitle>
+                <CardDescription>Catat link postingan konten Anda</CardDescription>
+              </div>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Log Konten
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Tambah Log Konten</DialogTitle>
+                    <DialogDescription>
+                      Masukkan detail postingan konten Anda
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Tanggal</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="link">Link Postingan</Label>
+                      <Input
+                        id="link"
+                        type="url"
+                        value={formData.link}
+                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                        placeholder="https://tiktok.com/@username/video/..."
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="post_number">Nomor Postingan</Label>
+                      <Input
+                        id="post_number"
+                        type="number"
+                        value={formData.post_number}
+                        onChange={(e) => setFormData({ ...formData, post_number: e.target.value })}
+                        placeholder="1"
+                        required
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_counted"
+                        checked={formData.is_counted}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, is_counted: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor="is_counted" className="cursor-pointer">
+                        Hitung dalam perhitungan payroll
+                      </Label>
+                    </div>
+                    <Button type="submit" className="w-full">Simpan</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Log Konten
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Tambah Log Konten</DialogTitle>
-                  <DialogDescription>
-                    Masukkan detail postingan konten Anda
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Tanggal</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="link">Link Postingan</Label>
-                    <Input
-                      id="link"
-                      type="url"
-                      value={formData.link}
-                      onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                      placeholder="https://tiktok.com/@username/video/..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="post_number">Nomor Postingan</Label>
-                    <Input
-                      id="post_number"
-                      type="number"
-                      value={formData.post_number}
-                      onChange={(e) => setFormData({ ...formData, post_number: e.target.value })}
-                      placeholder="1"
-                      required
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is_counted"
-                      checked={formData.is_counted}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, is_counted: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="is_counted" className="cursor-pointer">
-                      Hitung dalam perhitungan payroll
-                    </Label>
-                  </div>
-                  <Button type="submit" className="w-full">Simpan</Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
+      )}
 
       <Card className="shadow-md">
         <CardHeader>
@@ -204,9 +218,10 @@ export default function Konten() {
               Belum ada log konten. Mulai catat postingan Anda!
             </p>
           ) : (
-            <Table>
+             <Table>
               <TableHeader>
                 <TableRow>
+                  {userRole === "ADMIN" && <TableHead>Kreator</TableHead>}
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Nomor Post</TableHead>
                   <TableHead>Link</TableHead>
@@ -216,6 +231,11 @@ export default function Konten() {
               <TableBody>
                 {contentLogs.map((log) => (
                   <TableRow key={log.id}>
+                    {userRole === "ADMIN" && (
+                      <TableCell className="font-medium">
+                        {log.profiles?.name || "Unknown"}
+                      </TableCell>
+                    )}
                     <TableCell>{formatDate(log.date)}</TableCell>
                     <TableCell>#{log.post_number}</TableCell>
                     <TableCell>

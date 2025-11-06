@@ -12,22 +12,28 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function SesiLive() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
-  const [shift, setShift] = useState<"MORNING" | "AFTERNOON">("MORNING");
+  const [shift, setShift] = useState<"PAGI" | "SIANG" | "MALAM">("PAGI");
   const [activeSession, setActiveSession] = useState<string | null>(null);
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["sesi-live", user?.id],
+    queryKey: ["sesi-live", user?.id, userRole],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("sesi_live")
-        .select("*")
-        .eq("user_id", user!.id)
+        .select("*, profiles(name)")
         .order("check_in", { ascending: false });
 
+      // If creator, only show their own sessions
+      if (userRole === "CREATOR") {
+        query = query.eq("user_id", user!.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
-      return data;
+      return data as any;
     },
     enabled: !!user,
   });
@@ -105,62 +111,68 @@ export default function SesiLive() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Sesi Live</h1>
         <p className="text-muted-foreground mt-1">
-          Catat jam kerja live Anda dengan clock in dan clock out.
+          {userRole === "ADMIN"
+            ? "Lihat semua laporan sesi live dari kreator"
+            : "Catat jam kerja live Anda dengan clock in dan clock out"
+          }
         </p>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle>Clock In / Out</CardTitle>
-          <CardDescription>
-            {activeSession ? "Anda sedang live. Klik Clock Out untuk mengakhiri sesi." : "Pilih shift dan klik Clock In untuk memulai."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!activeSession ? (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Shift</label>
-                <Select value={shift} onValueChange={(v) => setShift(v as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MORNING">Pagi</SelectItem>
-                    <SelectItem value="AFTERNOON">Sore</SelectItem>
-                  </SelectContent>
-                </Select>
+      {userRole === "CREATOR" && (
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>Clock In / Out</CardTitle>
+            <CardDescription>
+              {activeSession ? "Anda sedang live. Klik Clock Out untuk mengakhiri sesi." : "Pilih shift dan klik Clock In untuk memulai."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!activeSession ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Shift</label>
+                  <Select value={shift} onValueChange={(v) => setShift(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PAGI">Pagi</SelectItem>
+                      <SelectItem value="SIANG">Siang/Sore</SelectItem>
+                      <SelectItem value="MALAM">Malam</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => clockInMutation.mutate()}
+                  disabled={clockInMutation.isPending}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Clock In
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-2 text-success">
+                  <Clock className="h-5 w-5 animate-pulse" />
+                  <span className="font-medium">Anda sedang live...</span>
+                </div>
+                <Button
+                  onClick={() => clockOutMutation.mutate()}
+                  disabled={clockOutMutation.isPending}
+                  className="w-full"
+                  variant="destructive"
+                  size="lg"
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Clock Out
+                </Button>
               </div>
-              <Button
-                onClick={() => clockInMutation.mutate()}
-                disabled={clockInMutation.isPending}
-                className="w-full"
-                size="lg"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Clock In
-              </Button>
-            </>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2 text-success">
-                <Clock className="h-5 w-5 animate-pulse" />
-                <span className="font-medium">Anda sedang live...</span>
-              </div>
-              <Button
-                onClick={() => clockOutMutation.mutate()}
-                disabled={clockOutMutation.isPending}
-                className="w-full"
-                variant="destructive"
-                size="lg"
-              >
-                <Square className="h-4 w-4 mr-2" />
-                Clock Out
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-md">
         <CardHeader>
@@ -171,6 +183,7 @@ export default function SesiLive() {
           <Table>
             <TableHeader>
               <TableRow>
+                {userRole === "ADMIN" && <TableHead>Kreator</TableHead>}
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Shift</TableHead>
                 <TableHead>Check In</TableHead>
@@ -181,10 +194,15 @@ export default function SesiLive() {
             <TableBody>
               {sessions.map((session) => (
                 <TableRow key={session.id}>
+                  {userRole === "ADMIN" && (
+                    <TableCell className="font-medium">
+                      {session.profiles?.name || "Unknown"}
+                    </TableCell>
+                  )}
                   <TableCell>{session.date}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {session.shift === "MORNING" ? "Pagi" : "Sore"}
+                      {session.shift === "PAGI" ? "Pagi" : session.shift === "SIANG" ? "Siang/Sore" : "Malam"}
                     </Badge>
                   </TableCell>
                   <TableCell>{format(new Date(session.check_in), "HH:mm")}</TableCell>
@@ -202,7 +220,7 @@ export default function SesiLive() {
               ))}
               {sessions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={userRole === "ADMIN" ? 6 : 5} className="text-center text-muted-foreground">
                     Belum ada sesi live
                   </TableCell>
                 </TableRow>

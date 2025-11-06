@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, TrendingDown, Plus } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
 
 interface LedgerEntry {
   id: string;
@@ -19,7 +20,7 @@ interface LedgerEntry {
   notes: string | null;
 }
 
-export default function Investor() {
+export default function Keuangan() {
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -92,6 +93,46 @@ export default function Investor() {
     }
   };
 
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      // Validate and insert data
+      const entries = jsonData.map((row: any) => ({
+        date: row.tanggal || row.date || new Date().toISOString().split('T')[0],
+        type: row.tipe || row.type || "CAPITAL_IN",
+        amount: parseFloat(row.jumlah || row.amount || 0),
+        notes: row.catatan || row.notes || null
+      }));
+
+      const { error } = await supabase
+        .from("investor_ledger")
+        .insert(entries);
+
+      if (error) throw error;
+
+      toast({
+        title: "Berhasil",
+        description: `${entries.length} entry berhasil diimport dari Excel`
+      });
+
+      fetchLedger();
+      e.target.value = "";
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const calculateSummary = () => {
     const capitalIn = ledgerEntries
       .filter(e => e.type === "CAPITAL_IN")
@@ -139,9 +180,9 @@ export default function Investor() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Investor Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Keuangan</h1>
         <p className="text-muted-foreground mt-1">
-          Ringkasan finansial dan buku besar investor.
+          Kelola pemasukan dan pengeluaran keuangan agensi.
         </p>
       </div>
 
@@ -201,6 +242,21 @@ export default function Investor() {
                   Tambah Entry
                 </Button>
               </DialogTrigger>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="excel-upload"
+                />
+                <Button variant="outline" asChild>
+                  <label htmlFor="excel-upload" className="cursor-pointer">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Excel
+                  </label>
+                </Button>
+              </div>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Tambah Entry Ledger</DialogTitle>
