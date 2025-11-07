@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,16 +95,12 @@ export default function SesiLive() {
   });
 
   // Check if there's an active session
-  const checkActiveSession = () => {
+  useEffect(() => {
     const active = sessions.find((s) => !s.check_out);
     if (active) {
       setActiveSession(active.id);
     }
-  };
-
-  useState(() => {
-    checkActiveSession();
-  });
+  }, [sessions]);
 
   return (
     <div className="space-y-6">
