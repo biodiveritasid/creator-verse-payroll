@@ -67,6 +67,8 @@ export default function SesiLive() {
 
   const clockOutMutation = useMutation({
     mutationFn: async () => {
+      if (!activeSession) throw new Error("Tidak ada sesi aktif");
+      
       const now = new Date();
       const session = sessions.find((s) => s.id === activeSession);
       if (!session) throw new Error("Sesi tidak ditemukan");

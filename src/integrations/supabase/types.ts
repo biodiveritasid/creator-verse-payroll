@@ -121,7 +121,10 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          keterangan: string | null
           notes: string | null
+          proof_link: string | null
+          title: string | null
           type: Database["public"]["Enums"]["ledger_type"]
         }
         Insert: {
@@ -129,7 +132,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          keterangan?: string | null
           notes?: string | null
+          proof_link?: string | null
+          title?: string | null
           type: Database["public"]["Enums"]["ledger_type"]
         }
         Update: {
@@ -137,7 +143,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          keterangan?: string | null
           notes?: string | null
+          proof_link?: string | null
+          title?: string | null
           type?: Database["public"]["Enums"]["ledger_type"]
         }
         Relationships: []

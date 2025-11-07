@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, TrendingDown, Plus, Upload } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Upload, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +15,11 @@ import * as XLSX from "xlsx";
 interface LedgerEntry {
   id: string;
   date: string;
-  type: "CAPITAL_IN" | "CAPITAL_OUT" | "PROFIT_SHARE";
+  type: "INCOME" | "EXPENSE";
   amount: number;
-  notes: string | null;
+  title: string;
+  keterangan: string | null;
+  proof_link: string | null;
 }
 
 export default function Keuangan() {
@@ -26,9 +28,11 @@ export default function Keuangan() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    type: "CAPITAL_IN" as "CAPITAL_IN" | "CAPITAL_OUT" | "PROFIT_SHARE",
+    type: "INCOME" as "INCOME" | "EXPENSE",
     amount: "",
-    notes: ""
+    title: "",
+    keterangan: "",
+    proof_link: ""
   });
   const { toast } = useToast();
 
@@ -44,7 +48,7 @@ export default function Keuangan() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      setLedgerEntries(data || []);
+      setLedgerEntries(data as any || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -63,25 +67,29 @@ export default function Keuangan() {
       const { error } = await supabase
         .from("investor_ledger")
         .insert({
-          date: formData.date,
+          date: new Date(formData.date).toISOString(),
           type: formData.type,
           amount: parseFloat(formData.amount),
-          notes: formData.notes || null
-        });
+          title: formData.title,
+          keterangan: formData.keterangan || null,
+          proof_link: formData.proof_link || null
+        } as any);
 
       if (error) throw error;
 
       toast({
         title: "Berhasil",
-        description: "Entry ledger berhasil ditambahkan"
+        description: "Transaksi berhasil ditambahkan"
       });
 
       setDialogOpen(false);
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        type: "CAPITAL_IN",
+        type: "INCOME",
         amount: "",
-        notes: ""
+        title: "",
+        keterangan: "",
+        proof_link: ""
       });
       fetchLedger();
     } catch (error: any) {
@@ -105,21 +113,23 @@ export default function Keuangan() {
 
       // Validate and insert data
       const entries = jsonData.map((row: any) => ({
-        date: row.tanggal || row.date || new Date().toISOString().split('T')[0],
-        type: row.tipe || row.type || "CAPITAL_IN",
-        amount: parseFloat(row.jumlah || row.amount || 0),
-        notes: row.catatan || row.notes || null
+        date: new Date(row.Tanggal).toISOString(),
+        type: row.Tipe === 'PEMASUKAN' ? 'INCOME' : 'EXPENSE',
+        amount: parseFloat(row.Nominal || 0),
+        title: row.Judul || '',
+        keterangan: row.Keterangan || null,
+        proof_link: row.Bukti || null
       }));
 
       const { error } = await supabase
         .from("investor_ledger")
-        .insert(entries);
+        .insert(entries as any);
 
       if (error) throw error;
 
       toast({
         title: "Berhasil",
-        description: `${entries.length} entry berhasil diimport dari Excel`
+        description: `${entries.length} transaksi berhasil diimpor`
       });
 
       fetchLedger();
@@ -133,21 +143,43 @@ export default function Keuangan() {
     }
   };
 
+  const downloadTemplate = () => {
+    const template = [
+      {
+        Tanggal: '2025-01-01',
+        Judul: 'Contoh Pemasukan',
+        Tipe: 'PEMASUKAN',
+        Nominal: 1000000,
+        Keterangan: 'Deskripsi transaksi',
+        Bukti: 'https://link-bukti.com'
+      },
+      {
+        Tanggal: '2025-01-02',
+        Judul: 'Contoh Pengeluaran',
+        Tipe: 'PENGELUARAN',
+        Nominal: 500000,
+        Keterangan: 'Deskripsi transaksi',
+        Bukti: 'https://link-bukti.com'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "template-keuangan.xlsx");
+  };
+
   const calculateSummary = () => {
-    const capitalIn = ledgerEntries
-      .filter(e => e.type === "CAPITAL_IN")
+    const income = ledgerEntries
+      .filter(e => e.type === "INCOME")
       .reduce((sum, e) => sum + e.amount, 0);
     
-    const capitalOut = ledgerEntries
-      .filter(e => e.type === "CAPITAL_OUT")
-      .reduce((sum, e) => sum + e.amount, 0);
-    
-    const profitShare = ledgerEntries
-      .filter(e => e.type === "PROFIT_SHARE")
+    const expense = ledgerEntries
+      .filter(e => e.type === "EXPENSE")
       .reduce((sum, e) => sum + e.amount, 0);
 
-    const net = capitalIn - capitalOut - profitShare;
-    return { capitalIn, capitalOut, profitShare, net };
+    const net = income - expense;
+    return { income, expense, net };
   };
 
   const summary = calculateSummary();
@@ -170,9 +202,8 @@ export default function Keuangan() {
 
   const getTypeLabel = (type: string) => {
     const labels = {
-      CAPITAL_IN: "Modal Masuk",
-      CAPITAL_OUT: "Modal Keluar",
-      PROFIT_SHARE: "Bagi Hasil"
+      INCOME: "Pemasukan",
+      EXPENSE: "Pengeluaran"
     };
     return labels[type as keyof typeof labels] || type;
   };
@@ -186,44 +217,36 @@ export default function Keuangan() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Modal Masuk</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Pemasukan</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(summary.income)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Pengeluaran</CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{formatCurrency(summary.expense)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.capitalIn)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Modal Keluar</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.capitalOut)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bagi Hasil</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.profitShare)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo Bersih</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.net)}</div>
+            <div className={`text-2xl font-bold ${summary.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(summary.net)}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -232,90 +255,115 @@ export default function Keuangan() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Ledger Investor</CardTitle>
-              <CardDescription>Buku besar modal dan profit share</CardDescription>
+              <CardTitle>Transaksi Keuangan</CardTitle>
+              <CardDescription>Kelola pemasukan dan pengeluaran agensi</CardDescription>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Entry
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={downloadTemplate} size="sm">
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
               <div className="relative">
                 <input
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={handleExcelUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   id="excel-upload"
                 />
-                <Button variant="outline" asChild>
-                  <label htmlFor="excel-upload" className="cursor-pointer">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Excel
-                  </label>
+                <Button variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Impor Excel
                 </Button>
               </div>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Tambah Entry Ledger</DialogTitle>
-                  <DialogDescription>
-                    Catat transaksi modal, bagi hasil, atau pengeluaran
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Tanggal</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Tipe Transaksi</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value: "CAPITAL_IN" | "CAPITAL_OUT" | "PROFIT_SHARE") => 
-                        setFormData({ ...formData, type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CAPITAL_IN">Modal Masuk</SelectItem>
-                        <SelectItem value="CAPITAL_OUT">Modal Keluar</SelectItem>
-                        <SelectItem value="PROFIT_SHARE">Bagi Hasil</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Jumlah (IDR)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Catatan</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Keterangan tambahan..."
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">Simpan</Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Transaksi
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Tambah Transaksi</DialogTitle>
+                    <DialogDescription>
+                      Catat transaksi keuangan baru
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Tanggal</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Judul</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Misal: Gaji Kreator Bulan Januari"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="type">Tipe</Label>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value: "INCOME" | "EXPENSE") => 
+                          setFormData({ ...formData, type: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INCOME">Pemasukan</SelectItem>
+                          <SelectItem value="EXPENSE">Pengeluaran</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Nominal (Rp)</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        placeholder="1000000"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="keterangan">Keterangan</Label>
+                      <Textarea
+                        id="keterangan"
+                        value={formData.keterangan}
+                        onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
+                        placeholder="Deskripsi transaksi..."
+                        rows={3}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="proof_link">Bukti (Link)</Label>
+                      <Input
+                        id="proof_link"
+                        type="url"
+                        value={formData.proof_link}
+                        onChange={(e) => setFormData({ ...formData, proof_link: e.target.value })}
+                        placeholder="https://drive.google.com/..."
+                      />
+                    </div>
+                    <Button type="submit" className="w-full">Simpan</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -330,21 +378,40 @@ export default function Keuangan() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tanggal</TableHead>
+                  <TableHead>Judul</TableHead>
                   <TableHead>Tipe</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
-                  <TableHead>Catatan</TableHead>
+                  <TableHead className="text-right">Nominal</TableHead>
+                  <TableHead>Keterangan</TableHead>
+                  <TableHead>Bukti</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ledgerEntries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>{formatDate(entry.date)}</TableCell>
-                    <TableCell>{getTypeLabel(entry.type)}</TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="font-medium">{entry.title}</TableCell>
+                    <TableCell>
+                      <span className={entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}>
+                        {getTypeLabel(entry.type)}
+                      </span>
+                    </TableCell>
+                    <TableCell className={`text-right font-semibold ${entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(entry.amount)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {entry.notes || "-"}
+                    <TableCell className="max-w-xs truncate text-muted-foreground">
+                      {entry.keterangan || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {entry.proof_link ? (
+                        <a 
+                          href={entry.proof_link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Lihat
+                        </a>
+                      ) : '-'}
                     </TableCell>
                   </TableRow>
                 ))}
