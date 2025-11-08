@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import { z } from "zod";
 
 interface LedgerEntry {
   id: string;
@@ -105,31 +106,81 @@ export default function Keuangan() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validation schema for Excel import
+    const ledgerEntrySchema = z.object({
+      Tanggal: z.string().refine(val => !isNaN(Date.parse(val)), {
+        message: "Format tanggal tidak valid"
+      }),
+      Judul: z.string().trim().min(1, "Judul tidak boleh kosong").max(200, "Judul maksimal 200 karakter"),
+      Tipe: z.enum(['PEMASUKAN', 'PENGELUARAN'], {
+        errorMap: () => ({ message: "Tipe harus PEMASUKAN atau PENGELUARAN" })
+      }),
+      Nominal: z.number().positive("Nominal harus positif").max(1000000000000, "Nominal terlalu besar"),
+      Keterangan: z.string().max(1000, "Keterangan maksimal 1000 karakter").optional(),
+      Bukti: z.string().url("Format URL tidak valid").max(500, "URL terlalu panjang").optional().or(z.literal(''))
+    });
+
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Validate and insert data
-      const entries = jsonData.map((row: any) => ({
-        date: new Date(row.Tanggal).toISOString(),
-        type: row.Tipe === 'PEMASUKAN' ? 'CAPITAL_IN' : 'CAPITAL_OUT',
-        amount: parseFloat(row.Nominal || 0),
-        title: row.Judul || '',
-        keterangan: row.Keterangan || null,
-        proof_link: row.Bukti || null
-      }));
+      // Limit batch size to prevent DoS
+      if (jsonData.length > 1000) {
+        throw new Error("Maksimal 1000 baris per file");
+      }
+
+      const validEntries: any[] = [];
+      const errors: string[] = [];
+
+      // Validate each row
+      for (let i = 0; i < jsonData.length; i++) {
+        const row: any = jsonData[i];
+        try {
+          // Convert Nominal to number if it's a string
+          const rowData = {
+            ...row,
+            Nominal: typeof row.Nominal === 'string' ? parseFloat(row.Nominal) : row.Nominal
+          };
+          
+          const validated = ledgerEntrySchema.parse(rowData);
+          
+          validEntries.push({
+            date: new Date(validated.Tanggal).toISOString(),
+            type: validated.Tipe === 'PEMASUKAN' ? 'CAPITAL_IN' : 'CAPITAL_OUT',
+            amount: validated.Nominal,
+            title: validated.Judul,
+            keterangan: validated.Keterangan || null,
+            proof_link: validated.Bukti || null
+          });
+        } catch (validationError: any) {
+          errors.push(`Baris ${i + 2}: ${validationError.errors?.[0]?.message || validationError.message}`);
+        }
+      }
+
+      if (errors.length > 0) {
+        toast({
+          title: "Validasi Gagal",
+          description: `${errors.length} baris error. Pertama: ${errors[0]}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (validEntries.length === 0) {
+        throw new Error("Tidak ada data valid untuk diimpor");
+      }
 
       const { error } = await supabase
         .from("investor_ledger")
-        .insert(entries as any);
+        .insert(validEntries);
 
       if (error) throw error;
 
       toast({
         title: "Berhasil",
-        description: `${entries.length} transaksi berhasil diimpor`
+        description: `${validEntries.length} transaksi berhasil diimpor`
       });
 
       fetchLedger();

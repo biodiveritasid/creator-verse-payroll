@@ -29,20 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Defer profile fetching with setTimeout
-          setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", session.user.id)
-              .single();
-            
-            setUserRole(profile?.role ?? null);
-          }, 0);
-        } else {
-          setUserRole(null);
-        }
+      if (session?.user) {
+        // Fetch role from user_roles table (security critical)
+        setTimeout(async () => {
+          const { data: userRoleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .single();
+          
+          setUserRole(userRoleData?.role ?? null);
+        }, 0);
+      } else {
+        setUserRole(null);
+      }
       }
     );
 
@@ -53,13 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         setTimeout(async () => {
-          const { data: profile } = await supabase
-            .from("profiles")
+          const { data: userRoleData } = await supabase
+            .from("user_roles")
             .select("role")
-            .eq("id", session.user.id)
+            .eq("user_id", session.user.id)
             .single();
           
-          setUserRole(profile?.role ?? null);
+          setUserRole(userRoleData?.role ?? null);
           setLoading(false);
         }, 0);
       } else {
