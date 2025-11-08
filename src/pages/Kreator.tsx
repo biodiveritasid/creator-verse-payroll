@@ -80,14 +80,13 @@ export default function Kreator() {
         if (error) throw error;
         toast.success("Kreator berhasil diperbarui");
       } else {
-        // Create new creator via auth
+        // Create new creator via auth (role is set via trigger)
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
               name: formData.name,
-              role: "CREATOR",
             },
           },
         });
