@@ -15,7 +15,7 @@ import * as XLSX from "xlsx";
 interface LedgerEntry {
   id: string;
   date: string;
-  type: "INCOME" | "EXPENSE";
+  type: "CAPITAL_IN" | "CAPITAL_OUT" | "PROFIT_SHARE";
   amount: number;
   title: string;
   keterangan: string | null;
@@ -28,7 +28,7 @@ export default function Keuangan() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    type: "INCOME" as "INCOME" | "EXPENSE",
+    type: "CAPITAL_IN" as "CAPITAL_IN" | "CAPITAL_OUT",
     amount: "",
     title: "",
     keterangan: "",
@@ -85,7 +85,7 @@ export default function Keuangan() {
       setDialogOpen(false);
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        type: "INCOME",
+        type: "CAPITAL_IN",
         amount: "",
         title: "",
         keterangan: "",
@@ -114,7 +114,7 @@ export default function Keuangan() {
       // Validate and insert data
       const entries = jsonData.map((row: any) => ({
         date: new Date(row.Tanggal).toISOString(),
-        type: row.Tipe === 'PEMASUKAN' ? 'INCOME' : 'EXPENSE',
+        type: row.Tipe === 'PEMASUKAN' ? 'CAPITAL_IN' : 'CAPITAL_OUT',
         amount: parseFloat(row.Nominal || 0),
         title: row.Judul || '',
         keterangan: row.Keterangan || null,
@@ -171,11 +171,11 @@ export default function Keuangan() {
 
   const calculateSummary = () => {
     const income = ledgerEntries
-      .filter(e => e.type === "INCOME")
+      .filter(e => e.type === "CAPITAL_IN")
       .reduce((sum, e) => sum + e.amount, 0);
     
     const expense = ledgerEntries
-      .filter(e => e.type === "EXPENSE")
+      .filter(e => e.type === "CAPITAL_OUT")
       .reduce((sum, e) => sum + e.amount, 0);
 
     const net = income - expense;
@@ -202,8 +202,9 @@ export default function Keuangan() {
 
   const getTypeLabel = (type: string) => {
     const labels = {
-      INCOME: "Pemasukan",
-      EXPENSE: "Pengeluaran"
+      CAPITAL_IN: "Pemasukan",
+      CAPITAL_OUT: "Pengeluaran",
+      PROFIT_SHARE: "Bagi Hasil"
     };
     return labels[type as keyof typeof labels] || type;
   };
@@ -315,7 +316,7 @@ export default function Keuangan() {
                       <Label htmlFor="type">Tipe</Label>
                       <Select
                         value={formData.type}
-                        onValueChange={(value: "INCOME" | "EXPENSE") => 
+                        onValueChange={(value: "CAPITAL_IN" | "CAPITAL_OUT") => 
                           setFormData({ ...formData, type: value })
                         }
                       >
@@ -323,8 +324,8 @@ export default function Keuangan() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="INCOME">Pemasukan</SelectItem>
-                          <SelectItem value="EXPENSE">Pengeluaran</SelectItem>
+                          <SelectItem value="CAPITAL_IN">Pemasukan</SelectItem>
+                          <SelectItem value="CAPITAL_OUT">Pengeluaran</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -391,11 +392,11 @@ export default function Keuangan() {
                     <TableCell>{formatDate(entry.date)}</TableCell>
                     <TableCell className="font-medium">{entry.title}</TableCell>
                     <TableCell>
-                      <span className={entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}>
+                      <span className={entry.type === 'CAPITAL_IN' ? 'text-green-600' : 'text-red-600'}>
                         {getTypeLabel(entry.type)}
                       </span>
                     </TableCell>
-                    <TableCell className={`text-right font-semibold ${entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                    <TableCell className={`text-right font-semibold ${entry.type === 'CAPITAL_IN' ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(entry.amount)}
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-muted-foreground">

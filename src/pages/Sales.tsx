@@ -236,17 +236,15 @@ export default function Sales() {
         </p>
       </div>
 
-      {currentUser?.role === "ADMIN" && (
-        <DateRangeFilter
-          filterType={filterType}
-          onFilterTypeChange={setFilterType}
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onApplyFilter={applyDateFilter}
-        />
-      )}
+      <DateRangeFilter
+        filterType={filterType}
+        onFilterTypeChange={setFilterType}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onApplyFilter={applyDateFilter}
+      />
 
       <SalesStatsCards
         totalGMV={totalGMV}

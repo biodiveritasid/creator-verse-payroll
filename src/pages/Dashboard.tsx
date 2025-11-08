@@ -13,7 +13,7 @@ export default function Dashboard() {
       if (!user) return null;
 
       if (userRole === "CREATOR") {
-        const [salesData, sessionsData, payoutsData] = await Promise.all([
+        const [salesData, sessionsData, payoutsData, commissionRulesRes] = await Promise.all([
           supabase
             .from("penjualan_harian")
             .select("gmv, commission_gross")
@@ -27,6 +27,7 @@ export default function Dashboard() {
             .select("total_payout")
             .eq("user_id", user.id)
             .eq("status", "PAID"),
+          supabase.from("aturan_komisi").select("*").maybeSingle(),
         ]);
 
         const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
@@ -34,11 +35,23 @@ export default function Dashboard() {
         const totalMinutes = sessionsData.data?.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) || 0;
         const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
 
+        // Calculate estimated bonus
+        let estimatedBonus = 0;
+        if (commissionRulesRes.data?.slabs && totalGMV > 0) {
+          const slabs = commissionRulesRes.data.slabs as any[];
+          const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
+          const targetSlab = sortedSlabs.find(slab => totalGMV >= slab.min);
+          if (targetSlab) {
+            estimatedBonus = Math.round(totalCommission * targetSlab.rate);
+          }
+        }
+
         return {
           totalGMV,
           totalCommission,
           totalMinutes,
           totalPayout,
+          estimatedBonus,
         };
       }
 
@@ -128,6 +141,17 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold text-success">{formatCurrency(stats?.totalPayout || 0)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Gaji yang sudah dibayar</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Estimasi Bonus Saat Ini</CardTitle>
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{formatCurrency(stats?.estimatedBonus || 0)}</div>
+                <p className="text-xs text-muted-foreground mt-1">Berdasarkan GMV saat ini</p>
               </CardContent>
             </Card>
           </>
