@@ -237,14 +237,13 @@ export default function Inventaris() {
                   <div className="space-y-2">
                     <Label htmlFor="peminjam_id">Peminjam (jika dipinjam)</Label>
                     <Select
-                      value={formData.peminjam_id}
+                      value={formData.peminjam_id || undefined}
                       onValueChange={(value) => setFormData({ ...formData, peminjam_id: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Pilih peminjam" />
+                        <SelectValue placeholder="Tidak ada / Pilih peminjam" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tidak ada</SelectItem>
                         {profiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
                             {profile.name}
