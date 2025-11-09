@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User, Lock } from "lucide-react";
+import { profileSchema, passwordChangeSchema } from "@/lib/validation";
 
 export default function Profil() {
   const { user } = useAuth();
@@ -50,11 +51,14 @@ export default function Profil() {
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = profileSchema.parse(profileData);
+      
       const { error } = await supabase
         .from("profiles")
         .update({
-          name: profileData.name,
-          tiktok_account: profileData.tiktok_account || null,
+          name: validatedData.name,
+          tiktok_account: validatedData.tiktok_account || null,
         })
         .eq("id", user!.id);
 
@@ -62,7 +66,11 @@ export default function Profil() {
 
       toast.success("Profil berhasil diperbarui");
     } catch (error: any) {
-      toast.error("Gagal memperbarui profil: " + error.message);
+      if (error.errors) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Gagal memperbarui profil: " + error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,22 +78,14 @@ export default function Profil() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Password tidak cocok");
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      toast.error("Password minimal 6 karakter");
-      return;
-    }
-
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = passwordChangeSchema.parse(passwordData);
+      
       const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
+        password: validatedData.newPassword,
       });
 
       if (error) throw error;
@@ -93,7 +93,11 @@ export default function Profil() {
       toast.success("Password berhasil diubah");
       setPasswordData({ newPassword: "", confirmPassword: "" });
     } catch (error: any) {
-      toast.error("Gagal mengubah password: " + error.message);
+      if (error.errors) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Gagal mengubah password: " + error.message);
+      }
     } finally {
       setLoading(false);
     }

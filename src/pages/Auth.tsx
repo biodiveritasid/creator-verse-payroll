@@ -47,8 +47,7 @@ export default function Auth() {
     const { error } = await signUp(
       signupData.email,
       signupData.password,
-      signupData.name,
-      "CREATOR" // Default role for public registration
+      signupData.name
     );
 
     if (error) {
