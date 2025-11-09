@@ -74,7 +74,7 @@ const App = () => (
             <Route
               path="/kreator/:creatorId"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <KreatorDetail />
                   </DashboardLayout>

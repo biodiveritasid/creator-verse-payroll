@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
   {
     title: "Manajemen",
     icon: Users,
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "INVESTOR"],
     children: [
       {
         title: "Payroll",
