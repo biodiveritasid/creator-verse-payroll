@@ -108,16 +108,27 @@ export default function Keuangan() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validation schema for Excel import
+    // Validation schema for Excel import - flexible to handle various data types
     const ledgerEntrySchema = z.object({
-      Tanggal: z.string().refine(val => !isNaN(Date.parse(val)), {
-        message: "Format tanggal tidak valid"
+      Tanggal: z.union([z.string(), z.number()]).transform((val) => {
+        // Handle Excel date serial numbers or string dates
+        if (typeof val === 'number') {
+          // Excel date serial to JS Date
+          const date = new Date((val - 25569) * 86400 * 1000);
+          return date.toISOString().split('T')[0];
+        }
+        return String(val);
       }),
-      Keterangan: z.string().trim().min(1, "Keterangan tidak boleh kosong").max(500, "Keterangan maksimal 500 karakter"),
-      Harga: z.number().positive("Harga harus positif").max(1000000000000, "Harga terlalu besar"),
-      Kuantitas: z.string().max(100, "Kuantitas maksimal 100 karakter").optional(),
-      Pembelian: z.string().max(200, "Pembelian maksimal 200 karakter").optional(),
-      'Struk/Faktur Pembelian': z.string().max(500, "URL terlalu panjang").optional().or(z.literal('-')).or(z.literal(''))
+      Keterangan: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
+      Harga: z.union([z.number(), z.string()]).transform(val => {
+        if (typeof val === 'string') {
+          return parseFloat(val.replace(/,/g, ''));
+        }
+        return val;
+      }),
+      Kuantitas: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+      Pembelian: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+      'Struk/Faktur Pembelian': z.union([z.string(), z.number()]).transform(val => String(val)).optional()
     });
 
     try {
@@ -138,20 +149,16 @@ export default function Keuangan() {
       for (let i = 0; i < jsonData.length; i++) {
         const row: any = jsonData[i];
         try {
-          // Convert Harga to number if it's a string (remove commas)
-          const rowData = {
-            ...row,
-            Harga: typeof row.Harga === 'string' 
-              ? parseFloat(row.Harga.replace(/,/g, '')) 
-              : row.Harga
-          };
-          
-          const validated = ledgerEntrySchema.parse(rowData);
+          const validated = ledgerEntrySchema.parse(row);
           
           // Build keterangan from Kuantitas and Pembelian
           const keteranganParts = [];
-          if (validated.Kuantitas) keteranganParts.push(`Kuantitas: ${validated.Kuantitas}`);
-          if (validated.Pembelian) keteranganParts.push(`Pembelian: ${validated.Pembelian}`);
+          if (validated.Kuantitas && validated.Kuantitas !== 'undefined') {
+            keteranganParts.push(`Kuantitas: ${validated.Kuantitas}`);
+          }
+          if (validated.Pembelian && validated.Pembelian !== 'undefined') {
+            keteranganParts.push(`Pembelian: ${validated.Pembelian}`);
+          }
           
           // Parse date - handle DD-MM-YYYY format
           let dateStr = validated.Tanggal;
@@ -169,6 +176,7 @@ export default function Keuangan() {
             keterangan: keteranganParts.length > 0 ? keteranganParts.join(' | ') : null,
             proof_link: (validated['Struk/Faktur Pembelian'] && 
                         validated['Struk/Faktur Pembelian'] !== '-' && 
+                        validated['Struk/Faktur Pembelian'] !== 'undefined' &&
                         validated['Struk/Faktur Pembelian'] !== '') 
                         ? validated['Struk/Faktur Pembelian'] 
                         : null
