@@ -72,6 +72,13 @@ export default function KreatorDetail() {
     });
   };
 
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    const secs = Math.floor((minutes * 60) % 60);
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Prepare chart data (last 30 days)
   const chartData = data?.sales
     .slice(0, 30)
@@ -281,7 +288,7 @@ export default function KreatorDetail() {
                         <TableHead>Shift</TableHead>
                         <TableHead>Check In</TableHead>
                         <TableHead>Check Out</TableHead>
-                        <TableHead className="text-right">Durasi (menit)</TableHead>
+                        <TableHead className="text-right">Durasi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -305,7 +312,9 @@ export default function KreatorDetail() {
                                 })
                               : "-"}
                           </TableCell>
-                          <TableCell className="text-right">{session.duration_minutes || 0}</TableCell>
+                          <TableCell className="text-right">
+                            {session.duration_minutes ? formatDuration(session.duration_minutes) : "-"}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

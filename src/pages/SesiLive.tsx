@@ -17,6 +17,13 @@ export default function SesiLive() {
   const [shift, setShift] = useState<"PAGI" | "SIANG" | "MALAM">("PAGI");
   const [activeSession, setActiveSession] = useState<string | null>(null);
 
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    const secs = Math.floor((minutes * 60) % 60);
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const { data: sessions = [] } = useQuery({
     queryKey: ["sesi-live", user?.id, userRole],
     queryFn: async () => {
@@ -217,7 +224,7 @@ export default function SesiLive() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {session.duration_minutes ? `${session.duration_minutes} menit` : "-"}
+                    {session.duration_minutes ? formatDuration(session.duration_minutes) : "-"}
                   </TableCell>
                 </TableRow>
               ))}
