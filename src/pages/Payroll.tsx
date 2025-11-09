@@ -136,6 +136,21 @@ export default function Payroll() {
     setShowCalculateDialog(false);
 
     try {
+      const period = getCurrentPeriod();
+
+      // Check if payroll already exists for this period
+      const { data: existingPayouts } = await supabase
+        .from("payouts")
+        .select("id")
+        .eq("period_start", period.start)
+        .eq("period_end", period.end);
+
+      if (existingPayouts && existingPayouts.length > 0) {
+        toast.error("Payroll untuk periode ini sudah pernah dihitung.");
+        setIsCalculating(false);
+        return;
+      }
+
       const [payrollRulesRes, commissionRulesRes] = await Promise.all([
         supabase.from("aturan_payroll").select("*").maybeSingle(),
         supabase.from("aturan_komisi").select("*").maybeSingle(),
@@ -150,8 +165,6 @@ export default function Payroll() {
 
       const payrollRules = payrollRulesRes.data as PayrollRules;
       const commissionSlabs = commissionRulesRes.data.slabs as unknown as CommissionSlab[];
-
-      const period = getCurrentPeriod();
 
       const dynamicWorkdays = calculateDynamicWorkdays(
         period.start,

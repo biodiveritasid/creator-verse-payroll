@@ -40,6 +40,11 @@ export default function SesiLive() {
 
   const clockInMutation = useMutation({
     mutationFn: async () => {
+      if (activeSession) {
+        toast.error("Anda sudah memiliki sesi live yang aktif.");
+        throw new Error("Active session exists");
+      }
+
       const now = new Date();
       const { data, error } = await supabase
         .from("sesi_live")

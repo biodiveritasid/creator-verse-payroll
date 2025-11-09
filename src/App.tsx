@@ -15,6 +15,8 @@ import Sales from "./pages/Sales";
 import Konten from "./pages/Konten";
 import Konfigurasi from "./pages/Konfigurasi";
 import Keuangan from "./pages/Keuangan";
+import Profil from "./pages/Profil";
+import Inventaris from "./pages/Inventaris";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,6 +106,26 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <Keuangan />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profil"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN", "CREATOR", "INVESTOR"]}>
+                  <DashboardLayout>
+                    <Profil />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventaris"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <DashboardLayout>
+                    <Inventaris />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

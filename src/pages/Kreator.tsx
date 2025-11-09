@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Pencil } from "lucide-react";
+import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -47,6 +48,7 @@ export default function Kreator() {
         .from("profiles")
         .select("*")
         .eq("role", "CREATOR")
+        .neq("status", "ARCHIVED")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -93,23 +95,7 @@ export default function Kreator() {
 
         if (authError) throw authError;
 
-        if (authData.user) {
-          // Update additional profile fields
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({
-              tiktok_account: formData.tiktok_account || null,
-              niche: formData.niche || null,
-              base_salary: parseFloat(formData.base_salary) || 0,
-              join_date: formData.join_date,
-              status: formData.status,
-            })
-            .eq("id", authData.user.id);
-
-          if (updateError) throw updateError;
-        }
-
-        toast.success("Kreator baru berhasil ditambahkan");
+        toast.success("Kreator baru berhasil dibuat. Silakan klik Edit untuk melengkapi Gaji Pokok, Niche, dan info lainnya.");
       }
 
       setIsDialogOpen(false);
@@ -149,6 +135,22 @@ export default function Kreator() {
       status: creator.status as "ACTIVE" | "PAUSED",
     });
     setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (creatorId: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: "ARCHIVED" })
+        .eq("id", creatorId);
+
+      if (error) throw error;
+      
+      toast.success("Kreator berhasil diarsipkan");
+      fetchCreators();
+    } catch (error: any) {
+      toast.error("Gagal mengarsipkan kreator: " + error.message);
+    }
   };
 
   const formatCurrency = (value: number | null) => {
@@ -343,13 +345,40 @@ export default function Kreator() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(creator)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(creator)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Arsipkan Kreator?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Kreator ini akan diarsipkan (soft delete). Data mereka tidak akan dihapus, tapi tidak akan tampil di daftar aktif.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(creator.id)}>
+                                  Ya, Arsipkan
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -115,6 +115,47 @@ export type Database = {
           },
         ]
       }
+      inventory_items: {
+        Row: {
+          catatan: string | null
+          created_at: string
+          id: string
+          kategori: string
+          nama_barang: string
+          peminjam_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          kategori: string
+          nama_barang: string
+          peminjam_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          kategori?: string
+          nama_barang?: string
+          peminjam_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_peminjam_id_fkey"
+            columns: ["peminjam_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_ledger: {
         Row: {
           amount: number
@@ -371,7 +412,7 @@ export type Database = {
       payout_status: "DRAFT" | "APPROVED" | "PAID"
       sales_source: "TIKTOK" | "SHOPEE"
       shift_type: "PAGI" | "SIANG" | "MALAM"
-      user_status: "ACTIVE" | "PAUSED"
+      user_status: "ACTIVE" | "PAUSED" | "ARCHIVED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -504,7 +545,7 @@ export const Constants = {
       payout_status: ["DRAFT", "APPROVED", "PAID"],
       sales_source: ["TIKTOK", "SHOPEE"],
       shift_type: ["PAGI", "SIANG", "MALAM"],
-      user_status: ["ACTIVE", "PAUSED"],
+      user_status: ["ACTIVE", "PAUSED", "ARCHIVED"],
     },
   },
 } as const

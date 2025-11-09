@@ -15,6 +15,8 @@ import {
   LogOut,
   Menu,
   X,
+  User,
+  Package,
 } from "lucide-react";
 
 interface NavItem {
@@ -73,10 +75,22 @@ const navItems: NavItem[] = [
     icon: TrendingUp,
     roles: ["ADMIN", "INVESTOR"],
   },
+  {
+    title: "Profil",
+    href: "/profil",
+    icon: User,
+    roles: ["ADMIN", "CREATOR", "INVESTOR"],
+  },
+  {
+    title: "Inventaris",
+    href: "/inventaris",
+    icon: Package,
+    roles: ["ADMIN"],
+  },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, userRole, user } = useAuth();
+  const { signOut, userRole, userName, user } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -108,8 +122,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Role:</span>
-              <span className="font-medium">{userRole}</span>
+              <span className="font-medium">{userName} ({userRole})</span>
             </div>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
