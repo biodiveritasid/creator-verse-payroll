@@ -16,6 +16,7 @@ export default function SesiLive() {
   const queryClient = useQueryClient();
   const [shift, setShift] = useState<"PAGI" | "SIANG" | "MALAM">("PAGI");
   const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [liveDuration, setLiveDuration] = useState<string>("0:00:00");
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -44,6 +45,40 @@ export default function SesiLive() {
     },
     enabled: !!user,
   });
+
+  // Update live duration every second
+  useEffect(() => {
+    if (!activeSession) {
+      setLiveDuration("0:00:00");
+      return;
+    }
+
+    const session = sessions.find((s) => s.id === activeSession);
+    if (!session) return;
+
+    const updateDuration = () => {
+      const checkIn = new Date(session.check_in);
+      const now = new Date();
+      const diffMs = now.getTime() - checkIn.getTime();
+      const diffSecs = Math.floor(diffMs / 1000);
+      
+      const hours = Math.floor(diffSecs / 3600);
+      const minutes = Math.floor((diffSecs % 3600) / 60);
+      const seconds = diffSecs % 60;
+      
+      setLiveDuration(
+        `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    };
+
+    // Update immediately
+    updateDuration();
+
+    // Then update every second
+    const interval = setInterval(updateDuration, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeSession, sessions]);
 
   const clockInMutation = useMutation({
     mutationFn: async () => {
@@ -164,9 +199,17 @@ export default function SesiLive() {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-center gap-2 text-success">
-                  <Clock className="h-5 w-5 animate-pulse" />
-                  <span className="font-medium">Anda sedang live...</span>
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-success">
+                    <Clock className="h-5 w-5 animate-pulse" />
+                    <span className="font-medium">Anda sedang live...</span>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold tabular-nums tracking-tight">
+                      {liveDuration}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Durasi Live</p>
+                  </div>
                 </div>
                 <Button
                   onClick={() => clockOutMutation.mutate()}
