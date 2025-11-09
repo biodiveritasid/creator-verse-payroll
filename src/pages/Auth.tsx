@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, AlertCircle } from "lucide-react";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPending = searchParams.get("pending") === "true";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({
@@ -51,7 +54,9 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Akun berhasil dibuat! Silakan login.");
+      toast.success("Pendaftaran berhasil! Akun Anda akan diaktifkan setelah disetujui oleh admin.");
+      setSignupData({ email: "", password: "", name: "" });
+      navigate("/auth?pending=true");
     }
 
     setIsLoading(false);
@@ -71,6 +76,18 @@ export default function Auth() {
             Platform manajemen kreator dan payroll
           </CardDescription>
         </CardHeader>
+        
+        {isPending && (
+          <div className="px-6 pb-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Akun Anda sedang menunggu persetujuan dari admin. Anda akan dapat login setelah akun disetujui.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">

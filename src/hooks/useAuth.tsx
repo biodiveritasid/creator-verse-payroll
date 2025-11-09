@@ -42,10 +42,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .single(),
             supabase
               .from("profiles")
-              .select("name")
+              .select("name, status")
               .eq("id", session.user.id)
               .single()
           ]);
+          
+          // Check if user is pending approval
+          if (profileData.data?.status === "PENDING_APPROVAL") {
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setUserRole(null);
+            setUserName(null);
+            navigate("/auth?pending=true");
+            return;
+          }
           
           setUserRole(userRoleData.data?.role ?? null);
           setUserName(profileData.data?.name ?? null);
@@ -72,10 +83,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .single(),
             supabase
               .from("profiles")
-              .select("name")
+              .select("name, status")
               .eq("id", session.user.id)
               .single()
           ]);
+          
+          // Check if user is pending approval
+          if (profileData.data?.status === "PENDING_APPROVAL") {
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setUserRole(null);
+            setUserName(null);
+            setLoading(false);
+            navigate("/auth?pending=true");
+            return;
+          }
           
           setUserRole(userRoleData.data?.role ?? null);
           setUserName(profileData.data?.name ?? null);
