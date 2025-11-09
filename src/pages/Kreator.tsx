@@ -103,6 +103,7 @@ export default function Kreator() {
           options: {
             data: {
               name: formData.name,
+              status: 'ACTIVE'
             },
           },
         });

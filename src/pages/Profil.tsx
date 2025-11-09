@@ -10,7 +10,7 @@ import { User, Lock } from "lucide-react";
 import { profileSchema, passwordChangeSchema } from "@/lib/validation";
 
 export default function Profil() {
-  const { user } = useAuth();
+  const { user, updateUserName } = useAuth();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: "",
@@ -65,6 +65,7 @@ export default function Profil() {
       if (error) throw error;
 
       toast.success("Profil berhasil diperbarui");
+      updateUserName(validatedData.name);
     } catch (error: any) {
       if (error.errors) {
         toast.error(error.errors[0].message);

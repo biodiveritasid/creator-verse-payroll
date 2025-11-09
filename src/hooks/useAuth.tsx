@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateUserName: (name: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
       if (session?.user) {
+        // Set loading immediately when user logs in
+        setLoading(true);
         // Fetch role and name from profiles table (security critical)
         setTimeout(async () => {
           const [userRoleData, profileData] = await Promise.all([
@@ -54,16 +57,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             setUserRole(null);
             setUserName(null);
+            setLoading(false);
             navigate("/auth?pending=true");
             return;
           }
           
           setUserRole(userRoleData.data?.role ?? null);
           setUserName(profileData.data?.name ?? null);
+          setLoading(false);
         }, 0);
       } else {
         setUserRole(null);
         setUserName(null);
+        setLoading(false);
       }
       }
     );
@@ -145,8 +151,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate("/auth");
   };
 
+  const updateUserName = (name: string) => {
+    setUserName(name);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, userRole, userName, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, userRole, userName, loading, signIn, signUp, signOut, updateUserName }}>
       {children}
     </AuthContext.Provider>
   );
