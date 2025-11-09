@@ -22,14 +22,22 @@ interface Creator {
   tiktok_account: string | null;
   niche: string | null;
   base_salary: number | null;
+  hourly_rate: number | null;
+  id_aturan_komisi: string | null;
   join_date: string;
   status: string;
+}
+
+interface CommissionRule {
+  id: string;
+  nama_aturan: string;
 }
 
 export default function Kreator() {
   const { userRole } = useAuth();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [pendingCreators, setPendingCreators] = useState<Creator[]>([]);
+  const [commissionRules, setCommissionRules] = useState<CommissionRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCreator, setEditingCreator] = useState<Creator | null>(null);
@@ -40,12 +48,15 @@ export default function Kreator() {
     tiktok_account: "",
     niche: "",
     base_salary: "",
+    hourly_rate: "",
+    id_aturan_komisi: "",
     join_date: new Date().toISOString().split('T')[0],
     status: "ACTIVE" as "ACTIVE" | "PAUSED",
   });
 
   useEffect(() => {
     fetchCreators();
+    fetchCommissionRules();
   }, []);
 
   const fetchCreators = async () => {
@@ -77,6 +88,19 @@ export default function Kreator() {
     }
   };
 
+  const fetchCommissionRules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("aturan_komisi")
+        .select("id, nama_aturan");
+
+      if (error) throw error;
+      setCommissionRules(data || []);
+    } catch (error: any) {
+      console.error("Gagal memuat aturan komisi:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -91,6 +115,8 @@ export default function Kreator() {
             tiktok_account: formData.tiktok_account || null,
             niche: formData.niche || null,
             base_salary: parseFloat(formData.base_salary) || 0,
+            hourly_rate: parseFloat(formData.hourly_rate) || 0,
+            id_aturan_komisi: formData.id_aturan_komisi || null,
             join_date: formData.join_date,
             status: formData.status,
           })
@@ -134,6 +160,8 @@ export default function Kreator() {
       tiktok_account: "",
       niche: "",
       base_salary: "",
+      hourly_rate: "",
+      id_aturan_komisi: "",
       join_date: new Date().toISOString().split('T')[0],
       status: "ACTIVE" as "ACTIVE" | "PAUSED",
     });
@@ -149,6 +177,8 @@ export default function Kreator() {
       tiktok_account: creator.tiktok_account || "",
       niche: creator.niche || "",
       base_salary: creator.base_salary?.toString() || "",
+      hourly_rate: creator.hourly_rate?.toString() || "",
+      id_aturan_komisi: creator.id_aturan_komisi || "",
       join_date: creator.join_date,
       status: creator.status as "ACTIVE" | "PAUSED",
     });
@@ -285,15 +315,49 @@ export default function Kreator() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="base_salary">Gaji Pokok (Rp) *</Label>
+                <Label htmlFor="base_salary">Gaji Pokok Bulanan (Rp)</Label>
                 <Input
                   id="base_salary"
                   type="number"
                   value={formData.base_salary}
                   onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                  required
                   min="0"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Untuk Kreator Afiliasi (gaji bulanan)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hourly_rate">Gaji per Jam (Rp)</Label>
+                <Input
+                  id="hourly_rate"
+                  type="number"
+                  value={formData.hourly_rate}
+                  onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                  min="0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Untuk Host Akun Internal (gaji per jam)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="id_aturan_komisi">Skema Bonus</Label>
+                <Select
+                  value={formData.id_aturan_komisi}
+                  onValueChange={(value) => setFormData({ ...formData, id_aturan_komisi: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih skema bonus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tidak ada bonus</SelectItem>
+                    {commissionRules.map((rule) => (
+                      <SelectItem key={rule.id} value={rule.id}>
+                        {rule.nama_aturan}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="join_date">Tanggal Bergabung *</Label>

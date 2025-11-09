@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          nama_aturan: string
           slabs: Json
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          nama_aturan?: string
           slabs?: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          nama_aturan?: string
           slabs?: Json
           updated_at?: string
         }
@@ -294,7 +297,9 @@ export type Database = {
           base_salary: number | null
           created_at: string
           email: string
+          hourly_rate: number | null
           id: string
+          id_aturan_komisi: string | null
           join_date: string
           name: string
           niche: string | null
@@ -307,7 +312,9 @@ export type Database = {
           base_salary?: number | null
           created_at?: string
           email: string
+          hourly_rate?: number | null
           id: string
+          id_aturan_komisi?: string | null
           join_date?: string
           name: string
           niche?: string | null
@@ -320,7 +327,9 @@ export type Database = {
           base_salary?: number | null
           created_at?: string
           email?: string
+          hourly_rate?: number | null
           id?: string
+          id_aturan_komisi?: string | null
           join_date?: string
           name?: string
           niche?: string | null
@@ -329,7 +338,15 @@ export type Database = {
           tiktok_account?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_aturan_komisi"
+            columns: ["id_aturan_komisi"]
+            isOneToOne: false
+            referencedRelation: "aturan_komisi"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sesi_live: {
         Row: {

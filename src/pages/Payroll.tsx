@@ -44,6 +44,12 @@ interface CommissionSlab {
   rate: number;
 }
 
+interface CommissionRule {
+  id: string;
+  nama_aturan: string;
+  slabs: CommissionSlab[];
+}
+
 export default function Payroll() {
   const { userRole } = useAuth();
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -153,20 +159,26 @@ export default function Payroll() {
         return;
       }
 
-      const [payrollRulesRes, commissionRulesRes] = await Promise.all([
+      const [payrollRulesRes, allCommissionRulesRes] = await Promise.all([
         supabase.from("aturan_payroll").select("*").maybeSingle(),
-        supabase.from("aturan_komisi").select("*").maybeSingle(),
+        supabase.from("aturan_komisi").select("*"),
       ]);
 
       if (payrollRulesRes.error) throw payrollRulesRes.error;
-      if (commissionRulesRes.error) throw commissionRulesRes.error;
+      if (allCommissionRulesRes.error) throw allCommissionRulesRes.error;
 
-      if (!payrollRulesRes.data || !commissionRulesRes.data) {
-        throw new Error("Aturan payroll/komisi belum dikonfigurasi");
+      if (!payrollRulesRes.data) {
+        throw new Error("Aturan payroll belum dikonfigurasi");
       }
 
       const payrollRules = payrollRulesRes.data as PayrollRules;
-      const commissionSlabs = commissionRulesRes.data.slabs as unknown as CommissionSlab[];
+      const allCommissionRules = allCommissionRulesRes.data || [];
+      
+      // Create a map for quick lookup
+      const commissionRulesMap = new Map<string, CommissionSlab[]>();
+      allCommissionRules.forEach((rule: any) => {
+        commissionRulesMap.set(rule.id, rule.slabs as unknown as CommissionSlab[]);
+      });
 
       const dynamicWorkdays = calculateDynamicWorkdays(
         period.start,
@@ -212,32 +224,49 @@ export default function Payroll() {
         const totalGmv = salesData?.reduce((sum, s) => sum + (s.gmv || 0), 0) || 0;
         const totalCommission = salesData?.reduce((sum, s) => sum + (s.commission_gross || 0), 0) || 0;
 
-        const achievementRatio = totalMinutes / targetMinutesMonthly;
-        const clampedRatio = Math.max(
-          payrollRules.floor_pct,
-          Math.min(payrollRules.cap_pct, achievementRatio)
-        );
+        // Calculate base pay based on salary type
+        let basePay = 0;
         const baseSalary = creator.base_salary || 0;
-        const baseSalaryAdjusted = Math.round(baseSalary * clampedRatio);
+        const hourlyRate = (creator as any).hourly_rate || 0;
 
-        let bonusCommission = 0;
-        if (totalGmv > 0) {
-          bonusCommission = calculateCommissionBonus(
-            totalGmv,
-            totalCommission,
-            commissionSlabs
+        if (baseSalary > 0) {
+          // Monthly salary (Kreator Afiliasi)
+          const achievementRatio = totalMinutes / targetMinutesMonthly;
+          const clampedRatio = Math.max(
+            payrollRules.floor_pct,
+            Math.min(payrollRules.cap_pct, achievementRatio)
           );
+          basePay = Math.round(baseSalary * clampedRatio);
+        } else if (hourlyRate > 0) {
+          // Hourly rate (Host Akun Internal)
+          const totalHours = totalMinutes / 60;
+          basePay = Math.round(totalHours * hourlyRate);
+        }
+
+        // Calculate bonus based on creator's commission rule
+        let bonusCommission = 0;
+        const creatorCommissionRuleId = (creator as any).id_aturan_komisi;
+        
+        if (totalGmv > 0 && creatorCommissionRuleId) {
+          const creatorSlabs = commissionRulesMap.get(creatorCommissionRuleId) || [];
+          if (creatorSlabs.length > 0) {
+            bonusCommission = calculateCommissionBonus(
+              totalGmv,
+              totalCommission,
+              creatorSlabs
+            );
+          }
         }
 
         const belowMinimum = totalMinutes < payrollRules.minimum_minutes;
-        const totalPayout = baseSalaryAdjusted + bonusCommission;
+        const totalPayout = basePay + bonusCommission;
 
         newPayouts.push({
           user_id: creator.id,
           period_start: period.start,
           period_end: period.end,
-          base_salary: baseSalary,
-          base_salary_adjusted: baseSalaryAdjusted,
+          base_salary: baseSalary > 0 ? baseSalary : hourlyRate,
+          base_salary_adjusted: basePay,
           bonus_commission: bonusCommission,
           deductions: 0,
           total_payout: totalPayout,
