@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -374,7 +375,14 @@ export default function Kreator() {
                     <TableBody>
                       {creators.map((creator) => (
                         <TableRow key={creator.id}>
-                          <TableCell className="font-medium">{creator.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <Link 
+                              to={`/kreator/${creator.id}`} 
+                              className="hover:underline text-primary"
+                            >
+                              {creator.name}
+                            </Link>
+                          </TableCell>
                           <TableCell>{creator.email}</TableCell>
                           <TableCell>{creator.tiktok_account || "-"}</TableCell>
                           <TableCell>{creator.niche || "-"}</TableCell>

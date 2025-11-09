@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import SesiLive from "./pages/SesiLive";
 import Payroll from "./pages/Payroll";
 import Kreator from "./pages/Kreator";
+import KreatorDetail from "./pages/KreatorDetail";
 import Sales from "./pages/Sales";
 import Konten from "./pages/Konten";
 import Konfigurasi from "./pages/Konfigurasi";
@@ -66,6 +67,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["ADMIN"]}>
                   <DashboardLayout>
                     <Kreator />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/kreator/:creatorId"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <DashboardLayout>
+                    <KreatorDetail />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

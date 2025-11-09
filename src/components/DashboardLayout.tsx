@@ -4,6 +4,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   LayoutDashboard,
   Users,
   Clock,
@@ -17,13 +22,15 @@ import {
   X,
   User,
   Package,
+  ChevronRight,
 } from "lucide-react";
 
 interface NavItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
+  children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -34,58 +41,79 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "CREATOR", "INVESTOR"],
   },
   {
-    title: "Sesi Live",
-    href: "/sesi-live",
-    icon: Clock,
+    title: "Performa",
+    icon: TrendingUp,
     roles: ["CREATOR", "ADMIN"],
+    children: [
+      {
+        title: "Sesi Live",
+        href: "/sesi-live",
+        icon: Clock,
+        roles: ["CREATOR", "ADMIN"],
+      },
+      {
+        title: "Sales",
+        href: "/sales",
+        icon: ShoppingCart,
+        roles: ["ADMIN", "CREATOR"],
+      },
+      {
+        title: "Konten",
+        href: "/konten",
+        icon: FileText,
+        roles: ["CREATOR", "ADMIN"],
+      },
+    ],
   },
   {
-    title: "Payroll",
-    href: "/payroll",
-    icon: DollarSign,
-    roles: ["ADMIN"],
-  },
-  {
-    title: "Kreator",
-    href: "/kreator",
+    title: "Manajemen",
     icon: Users,
     roles: ["ADMIN"],
+    children: [
+      {
+        title: "Payroll",
+        href: "/payroll",
+        icon: DollarSign,
+        roles: ["ADMIN"],
+      },
+      {
+        title: "Kreator",
+        href: "/kreator",
+        icon: Users,
+        roles: ["ADMIN"],
+      },
+      {
+        title: "Inventaris",
+        href: "/inventaris",
+        icon: Package,
+        roles: ["ADMIN"],
+      },
+    ],
   },
   {
-    title: "Sales",
-    href: "/sales",
-    icon: ShoppingCart,
-    roles: ["ADMIN", "CREATOR"],
-  },
-  {
-    title: "Konten",
-    href: "/konten",
-    icon: FileText,
-    roles: ["CREATOR", "ADMIN"],
-  },
-  {
-    title: "Konfigurasi",
-    href: "/konfigurasi",
-    icon: Settings,
-    roles: ["ADMIN"],
-  },
-  {
-    title: "Keuangan",
-    href: "/keuangan",
-    icon: TrendingUp,
+    title: "Bisnis",
+    icon: DollarSign,
     roles: ["ADMIN", "INVESTOR"],
+    children: [
+      {
+        title: "Keuangan",
+        href: "/keuangan",
+        icon: TrendingUp,
+        roles: ["ADMIN", "INVESTOR"],
+      },
+      {
+        title: "Konfigurasi",
+        href: "/konfigurasi",
+        icon: Settings,
+        roles: ["ADMIN"],
+      },
+    ],
   },
   {
     title: "Profil",
     href: "/profil",
     icon: User,
     roles: ["ADMIN", "CREATOR", "INVESTOR"],
-  },
-  {
-    title: "Inventaris",
-    href: "/inventaris",
-    icon: Package,
-    roles: ["ADMIN"],
   },
 ];
 
@@ -94,9 +122,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const filteredNavItems = navItems.filter((item) =>
-    userRole ? item.roles.includes(userRole) : false
-  );
+  const filteredNavItems = navItems.filter((item) => {
+    if (!userRole) return false;
+    if (!item.roles.includes(userRole)) return false;
+    
+    // Filter children based on role
+    if (item.children) {
+      item.children = item.children.filter((child) =>
+        userRole ? child.roles.includes(userRole) : false
+      );
+    }
+    
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,21 +176,68 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <nav className="space-y-1">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.href;
               
+              // Item without children (direct link)
+              if (!item.children) {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link key={item.href} to={item.href!}>
+                    <Button
+                      variant={isActive ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start",
+                        isActive && "bg-secondary font-medium"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 mr-2" />
+                      {item.title}
+                    </Button>
+                  </Link>
+                );
+              }
+
+              // Item with children (collapsible parent)
+              const hasActiveChild = item.children.some(
+                (child) => child.href === location.pathname
+              );
+
               return (
-                <Link key={item.href} to={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start",
-                      isActive && "bg-secondary font-medium"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.title}
-                  </Button>
-                </Link>
+                <Collapsible key={item.title} defaultOpen={hasActiveChild}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between hover:bg-accent"
+                    >
+                      <span className="flex items-center">
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.title}
+                      </span>
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pl-6 pt-1">
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      const isActive = location.pathname === child.href;
+                      
+                      return (
+                        <Link key={child.href} to={child.href!}>
+                          <Button
+                            variant={isActive ? "secondary" : "ghost"}
+                            size="sm"
+                            className={cn(
+                              "w-full justify-start",
+                              isActive && "bg-secondary font-medium"
+                            )}
+                          >
+                            <ChildIcon className="h-4 w-4 mr-2" />
+                            {child.title}
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
               );
             })}
           </nav>
@@ -168,25 +253,76 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <nav className="fixed top-16 left-0 bottom-0 w-64 bg-card border-r p-4 space-y-1">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.href;
                 
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start",
-                        isActive && "bg-secondary font-medium"
-                      )}
+                // Item without children
+                if (!item.children) {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href!}
+                      onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Icon className="h-4 w-4 mr-2" />
-                      {item.title}
-                    </Button>
-                  </Link>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start",
+                          isActive && "bg-secondary font-medium"
+                        )}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.title}
+                      </Button>
+                    </Link>
+                  );
+                }
+
+                // Item with children
+                const hasActiveChild = item.children.some(
+                  (child) => child.href === location.pathname
+                );
+
+                return (
+                  <Collapsible key={item.title} defaultOpen={hasActiveChild}>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between hover:bg-accent"
+                      >
+                        <span className="flex items-center">
+                          <Icon className="h-4 w-4 mr-2" />
+                          {item.title}
+                        </span>
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-1 pl-6 pt-1">
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        const isActive = location.pathname === child.href;
+                        
+                        return (
+                          <Link
+                            key={child.href}
+                            to={child.href!}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Button
+                              variant={isActive ? "secondary" : "ghost"}
+                              size="sm"
+                              className={cn(
+                                "w-full justify-start",
+                                isActive && "bg-secondary font-medium"
+                              )}
+                            >
+                              <ChildIcon className="h-4 w-4 mr-2" />
+                              {child.title}
+                            </Button>
+                          </Link>
+                        );
+                      })}
+                    </CollapsibleContent>
+                  </Collapsible>
                 );
               })}
             </nav>
