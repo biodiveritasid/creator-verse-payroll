@@ -15,6 +15,9 @@ export default function Profil() {
   const [profileData, setProfileData] = useState({
     name: "",
     tiktok_account: "",
+    nama_bank: "",
+    nomor_rekening: "",
+    nama_pemilik_rekening: "",
   });
   const [passwordData, setPasswordData] = useState({
     newPassword: "",
@@ -31,7 +34,7 @@ export default function Profil() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("name, tiktok_account")
+        .select("name, tiktok_account, nama_bank, nomor_rekening, nama_pemilik_rekening")
         .eq("id", user!.id)
         .single();
 
@@ -40,6 +43,9 @@ export default function Profil() {
       setProfileData({
         name: data.name || "",
         tiktok_account: data.tiktok_account || "",
+        nama_bank: data.nama_bank || "",
+        nomor_rekening: data.nomor_rekening || "",
+        nama_pemilik_rekening: data.nama_pemilik_rekening || "",
       });
     } catch (error: any) {
       toast.error("Gagal memuat profil: " + error.message);
@@ -59,6 +65,9 @@ export default function Profil() {
         .update({
           name: validatedData.name,
           tiktok_account: validatedData.tiktok_account || null,
+          nama_bank: validatedData.nama_bank || null,
+          nomor_rekening: validatedData.nomor_rekening || null,
+          nama_pemilik_rekening: validatedData.nama_pemilik_rekening || null,
         })
         .eq("id", user!.id);
 
@@ -182,6 +191,50 @@ export default function Profil() {
             </div>
             <Button type="submit" disabled={loading}>
               {loading ? "Menyimpan..." : "Simpan Password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-md">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            <CardTitle>Informasi Bank</CardTitle>
+          </div>
+          <CardDescription>Data rekening untuk penggajian</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleProfileUpdate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nama_bank">Nama Bank</Label>
+              <Input
+                id="nama_bank"
+                value={profileData.nama_bank}
+                onChange={(e) => setProfileData({ ...profileData, nama_bank: e.target.value })}
+                placeholder="Contoh: BCA, Mandiri, BRI"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nomor_rekening">Nomor Rekening</Label>
+              <Input
+                id="nomor_rekening"
+                value={profileData.nomor_rekening}
+                onChange={(e) => setProfileData({ ...profileData, nomor_rekening: e.target.value })}
+                placeholder="1234567890"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nama_pemilik_rekening">Nama Pemilik Rekening</Label>
+              <Input
+                id="nama_pemilik_rekening"
+                value={profileData.nama_pemilik_rekening}
+                onChange={(e) => setProfileData({ ...profileData, nama_pemilik_rekening: e.target.value })}
+                placeholder="Sesuai dengan nama di rekening"
+              />
+            </div>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Menyimpan..." : "Simpan Informasi Bank"}
             </Button>
           </form>
         </CardContent>

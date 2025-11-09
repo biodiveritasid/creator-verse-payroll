@@ -301,8 +301,11 @@ export type Database = {
           id: string
           id_aturan_komisi: string | null
           join_date: string
+          nama_bank: string | null
+          nama_pemilik_rekening: string | null
           name: string
           niche: string | null
+          nomor_rekening: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["user_status"]
           tiktok_account: string | null
@@ -316,8 +319,11 @@ export type Database = {
           id: string
           id_aturan_komisi?: string | null
           join_date?: string
+          nama_bank?: string | null
+          nama_pemilik_rekening?: string | null
           name: string
           niche?: string | null
+          nomor_rekening?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_status"]
           tiktok_account?: string | null
@@ -331,8 +337,11 @@ export type Database = {
           id?: string
           id_aturan_komisi?: string | null
           join_date?: string
+          nama_bank?: string | null
+          nama_pemilik_rekening?: string | null
           name?: string
           niche?: string | null
+          nomor_rekening?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_status"]
           tiktok_account?: string | null

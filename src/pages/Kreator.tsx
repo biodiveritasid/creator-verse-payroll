@@ -26,6 +26,9 @@ interface Creator {
   id_aturan_komisi: string | null;
   join_date: string;
   status: string;
+  nama_bank: string | null;
+  nomor_rekening: string | null;
+  nama_pemilik_rekening: string | null;
 }
 
 interface CommissionRule {
@@ -52,6 +55,9 @@ export default function Kreator() {
     id_aturan_komisi: "",
     join_date: new Date().toISOString().split('T')[0],
     status: "ACTIVE" as "ACTIVE" | "PAUSED",
+    nama_bank: "",
+    nomor_rekening: "",
+    nama_pemilik_rekening: "",
   });
 
   useEffect(() => {
@@ -119,6 +125,9 @@ export default function Kreator() {
             id_aturan_komisi: formData.id_aturan_komisi || null,
             join_date: formData.join_date,
             status: formData.status,
+            nama_bank: formData.nama_bank || null,
+            nomor_rekening: formData.nomor_rekening || null,
+            nama_pemilik_rekening: formData.nama_pemilik_rekening || null,
           })
           .eq("id", editingCreator.id);
 
@@ -164,6 +173,9 @@ export default function Kreator() {
       id_aturan_komisi: "",
       join_date: new Date().toISOString().split('T')[0],
       status: "ACTIVE" as "ACTIVE" | "PAUSED",
+      nama_bank: "",
+      nomor_rekening: "",
+      nama_pemilik_rekening: "",
     });
     setEditingCreator(null);
   };
@@ -181,6 +193,9 @@ export default function Kreator() {
       id_aturan_komisi: creator.id_aturan_komisi || "",
       join_date: creator.join_date,
       status: creator.status as "ACTIVE" | "PAUSED",
+      nama_bank: creator.nama_bank || "",
+      nomor_rekening: creator.nomor_rekening || "",
+      nama_pemilik_rekening: creator.nama_pemilik_rekening || "",
     });
     setIsDialogOpen(true);
   };
@@ -383,6 +398,33 @@ export default function Kreator() {
                     <SelectItem value="PAUSED">Paused</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nama_bank">Nama Bank</Label>
+                <Input
+                  id="nama_bank"
+                  value={formData.nama_bank}
+                  onChange={(e) => setFormData({ ...formData, nama_bank: e.target.value })}
+                  placeholder="Contoh: BCA, Mandiri, BRI"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nomor_rekening">Nomor Rekening</Label>
+                <Input
+                  id="nomor_rekening"
+                  value={formData.nomor_rekening}
+                  onChange={(e) => setFormData({ ...formData, nomor_rekening: e.target.value })}
+                  placeholder="1234567890"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nama_pemilik_rekening">Nama Pemilik Rekening</Label>
+                <Input
+                  id="nama_pemilik_rekening"
+                  value={formData.nama_pemilik_rekening}
+                  onChange={(e) => setFormData({ ...formData, nama_pemilik_rekening: e.target.value })}
+                  placeholder="Sesuai dengan nama di rekening"
+                />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button

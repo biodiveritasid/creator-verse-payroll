@@ -4,6 +4,9 @@ import { z } from 'zod';
 export const profileSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
   tiktok_account: z.string().trim().max(50, 'Username TikTok maksimal 50 karakter').optional().or(z.literal('')),
+  nama_bank: z.string().trim().max(100, 'Nama bank maksimal 100 karakter').optional().or(z.literal('')),
+  nomor_rekening: z.string().trim().max(50, 'Nomor rekening maksimal 50 karakter').optional().or(z.literal('')),
+  nama_pemilik_rekening: z.string().trim().max(100, 'Nama pemilik rekening maksimal 100 karakter').optional().or(z.literal('')),
 });
 
 // Sales validation schema
@@ -22,6 +25,9 @@ export const creatorSchema = z.object({
   tiktok_account: z.string().trim().max(50, 'Username TikTok maksimal 50 karakter').optional().or(z.literal('')),
   niche: z.string().trim().max(100, 'Niche maksimal 100 karakter').optional().or(z.literal('')),
   base_salary: z.number().min(0, 'Gaji tidak boleh negatif').max(999999999999, 'Gaji terlalu besar'),
+  nama_bank: z.string().trim().max(100, 'Nama bank maksimal 100 karakter').optional().or(z.literal('')),
+  nomor_rekening: z.string().trim().max(50, 'Nomor rekening maksimal 50 karakter').optional().or(z.literal('')),
+  nama_pemilik_rekening: z.string().trim().max(100, 'Nama pemilik rekening maksimal 100 karakter').optional().or(z.literal('')),
 });
 
 // Inventory validation schema
