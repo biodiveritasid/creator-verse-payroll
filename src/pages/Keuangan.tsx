@@ -113,13 +113,11 @@ export default function Keuangan() {
       Tanggal: z.string().refine(val => !isNaN(Date.parse(val)), {
         message: "Format tanggal tidak valid"
       }),
-      Judul: z.string().trim().min(1, "Judul tidak boleh kosong").max(200, "Judul maksimal 200 karakter"),
-      Tipe: z.enum(['PEMASUKAN', 'PENGELUARAN'], {
-        errorMap: () => ({ message: "Tipe harus PEMASUKAN atau PENGELUARAN" })
-      }),
-      Nominal: z.number().positive("Nominal harus positif").max(1000000000000, "Nominal terlalu besar"),
-      Keterangan: z.string().max(1000, "Keterangan maksimal 1000 karakter").optional(),
-      Bukti: z.string().url("Format URL tidak valid").max(500, "URL terlalu panjang").optional().or(z.literal(''))
+      Keterangan: z.string().trim().min(1, "Keterangan tidak boleh kosong").max(500, "Keterangan maksimal 500 karakter"),
+      Harga: z.number().positive("Harga harus positif").max(1000000000000, "Harga terlalu besar"),
+      Kuantitas: z.string().max(100, "Kuantitas maksimal 100 karakter").optional(),
+      Pembelian: z.string().max(200, "Pembelian maksimal 200 karakter").optional(),
+      'Struk/Faktur Pembelian': z.string().max(500, "URL terlalu panjang").optional().or(z.literal('-')).or(z.literal(''))
     });
 
     try {
@@ -140,21 +138,40 @@ export default function Keuangan() {
       for (let i = 0; i < jsonData.length; i++) {
         const row: any = jsonData[i];
         try {
-          // Convert Nominal to number if it's a string
+          // Convert Harga to number if it's a string (remove commas)
           const rowData = {
             ...row,
-            Nominal: typeof row.Nominal === 'string' ? parseFloat(row.Nominal) : row.Nominal
+            Harga: typeof row.Harga === 'string' 
+              ? parseFloat(row.Harga.replace(/,/g, '')) 
+              : row.Harga
           };
           
           const validated = ledgerEntrySchema.parse(rowData);
           
+          // Build keterangan from Kuantitas and Pembelian
+          const keteranganParts = [];
+          if (validated.Kuantitas) keteranganParts.push(`Kuantitas: ${validated.Kuantitas}`);
+          if (validated.Pembelian) keteranganParts.push(`Pembelian: ${validated.Pembelian}`);
+          
+          // Parse date - handle DD-MM-YYYY format
+          let dateStr = validated.Tanggal;
+          if (dateStr.includes('-') && dateStr.split('-')[0].length === 2) {
+            // DD-MM-YYYY format
+            const [day, month, year] = dateStr.split('-');
+            dateStr = `${year}-${month}-${day}`;
+          }
+          
           validEntries.push({
-            date: new Date(validated.Tanggal).toISOString(),
-            type: validated.Tipe === 'PEMASUKAN' ? 'CAPITAL_IN' : 'CAPITAL_OUT',
-            amount: validated.Nominal,
-            title: validated.Judul,
-            keterangan: validated.Keterangan || null,
-            proof_link: validated.Bukti || null
+            date: new Date(dateStr).toISOString(),
+            type: 'CAPITAL_OUT', // Default to expense
+            amount: validated.Harga,
+            title: validated.Keterangan,
+            keterangan: keteranganParts.length > 0 ? keteranganParts.join(' | ') : null,
+            proof_link: (validated['Struk/Faktur Pembelian'] && 
+                        validated['Struk/Faktur Pembelian'] !== '-' && 
+                        validated['Struk/Faktur Pembelian'] !== '') 
+                        ? validated['Struk/Faktur Pembelian'] 
+                        : null
           });
         } catch (validationError: any) {
           errors.push(`Baris ${i + 2}: ${validationError.errors?.[0]?.message || validationError.message}`);
@@ -199,26 +216,34 @@ export default function Keuangan() {
   const downloadTemplate = () => {
     const template = [
       {
-        Tanggal: '2025-01-01',
-        Judul: 'Contoh Pemasukan',
-        Tipe: 'PEMASUKAN',
-        Nominal: 1000000,
-        Keterangan: 'Deskripsi transaksi',
-        Bukti: 'https://link-bukti.com'
+        Tanggal: '15-10-2025',
+        Keterangan: '1 Unit HP iPhone 11 64gb ESIM WIFI',
+        Harga: 2466000,
+        Kuantitas: '1 unit',
+        Pembelian: 'Shopee',
+        'Struk/Faktur Pembelian': 'https://drive.google.com/file/d/1Rzm3MhSk0sMfBI5BTKrxiMcSIellUSl8/view'
       },
       {
-        Tanggal: '2025-01-02',
-        Judul: 'Contoh Pengeluaran',
-        Tipe: 'PENGELUARAN',
-        Nominal: 500000,
-        Keterangan: 'Deskripsi transaksi',
-        Bukti: 'https://link-bukti.com'
+        Tanggal: '17-10-2025',
+        Keterangan: 'Case Clear Magsafe IP 11',
+        Harga: 12000,
+        Kuantitas: '1 pcs',
+        Pembelian: 'Zona Case Tasikmalaya',
+        'Struk/Faktur Pembelian': 'https://drive.google.com/file/d/1_zlrAhDs1mv42_4-8TuGHOG3KBYcOx-R/view'
+      },
+      {
+        Tanggal: '20-10-2025',
+        Keterangan: 'Kipas Angin Advance SF 16A',
+        Harga: 127000,
+        Kuantitas: '1 unit',
+        Pembelian: 'Shopee',
+        'Struk/Faktur Pembelian': 'https://drive.google.com/file/d/1wjFt562eUKoT6nPyOvoqPesNhHsc0pw_/view'
       }
     ];
 
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet 1");
     XLSX.writeFile(wb, "template-keuangan.xlsx");
   };
 
