@@ -10,6 +10,7 @@ import { TrendingUp, TrendingDown, Plus, Upload, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 
@@ -24,6 +25,7 @@ interface LedgerEntry {
 }
 
 export default function Keuangan() {
+  const { userRole } = useAuth();
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -310,31 +312,32 @@ export default function Keuangan() {
               <CardTitle>Transaksi Keuangan</CardTitle>
               <CardDescription>Kelola pemasukan dan pengeluaran agensi</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={downloadTemplate} size="sm">
-                <TrendingDown className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleExcelUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  id="excel-upload"
-                />
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Impor Excel
+            {userRole !== 'INVESTOR' && (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={downloadTemplate} size="sm">
+                  <TrendingDown className="h-4 w-4 mr-2" />
+                  Download Template
                 </Button>
-              </div>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Transaksi
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    id="excel-upload"
+                  />
+                  <Button variant="outline" size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Impor Excel
                   </Button>
-                </DialogTrigger>
+                </div>
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Tambah Transaksi
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle>Tambah Transaksi</DialogTitle>
@@ -415,7 +418,8 @@ export default function Keuangan() {
                   </form>
                 </DialogContent>
               </Dialog>
-            </div>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>

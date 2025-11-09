@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import SalesStatsCards from "@/components/sales/SalesStatsCards";
 import CreatorSalesTable from "@/components/sales/CreatorSalesTable";
 import DailySalesTable from "@/components/sales/DailySalesTable";
@@ -27,6 +28,7 @@ interface CreatorSales {
 }
 
 export default function Sales() {
+  const { userRole } = useAuth();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [creatorSales, setCreatorSales] = useState<CreatorSales[]>([]);
   const [loading, setLoading] = useState(true);
@@ -270,15 +272,17 @@ export default function Sales() {
         </>
       ) : (
         <>
-          <div className="flex justify-end">
-            <AddSalesDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              formData={formData}
-              onFormDataChange={setFormData}
-              onSubmit={handleSubmit}
-            />
-          </div>
+          {userRole !== 'INVESTOR' && (
+            <div className="flex justify-end">
+              <AddSalesDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                formData={formData}
+                onFormDataChange={setFormData}
+                onSubmit={handleSubmit}
+              />
+            </div>
+          )}
 
           <DailySalesTable
             salesData={salesData}

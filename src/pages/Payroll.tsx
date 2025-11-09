@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Calculator, Clock, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface Payout {
@@ -44,6 +45,7 @@ interface CommissionSlab {
 }
 
 export default function Payroll() {
+  const { userRole } = useAuth();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -365,10 +367,12 @@ export default function Payroll() {
               <CardTitle>Perhitungan Payroll</CardTitle>
               <CardDescription>Generate payroll otomatis untuk periode berjalan</CardDescription>
             </div>
-            <Button onClick={() => setShowCalculateDialog(true)} disabled={isCalculating}>
-              <Calculator className="h-4 w-4 mr-2" />
-              {isCalculating ? "Menghitung..." : "Hitung Payroll"}
-            </Button>
+            {userRole !== 'INVESTOR' && (
+              <Button onClick={() => setShowCalculateDialog(true)} disabled={isCalculating}>
+                <Calculator className="h-4 w-4 mr-2" />
+                {isCalculating ? "Menghitung..." : "Hitung Payroll"}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -397,7 +401,7 @@ export default function Payroll() {
                     <TableHead>Total Payout</TableHead>
                     <TableHead>Flag</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
+                    {userRole !== 'INVESTOR' && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -434,21 +438,23 @@ export default function Payroll() {
                         )}
                       </TableCell>
                       <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={payout.status}
-                          onValueChange={(value: "DRAFT" | "APPROVED" | "PAID") => handleUpdateStatus(payout.id, value)}
-                        >
-                          <SelectTrigger className="w-[130px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="DRAFT">Draft</SelectItem>
-                            <SelectItem value="APPROVED">Approved</SelectItem>
-                            <SelectItem value="PAID">Paid</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+                      {userRole !== 'INVESTOR' && (
+                        <TableCell>
+                          <Select
+                            value={payout.status}
+                            onValueChange={(value: "DRAFT" | "APPROVED" | "PAID") => handleUpdateStatus(payout.id, value)}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="DRAFT">Draft</SelectItem>
+                              <SelectItem value="APPROVED">Approved</SelectItem>
+                              <SelectItem value="PAID">Paid</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

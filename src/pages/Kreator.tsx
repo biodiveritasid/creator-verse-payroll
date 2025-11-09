@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Pencil, Trash2, UserCheck } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface Creator {
@@ -26,6 +27,7 @@ interface Creator {
 }
 
 export default function Kreator() {
+  const { userRole } = useAuth();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [pendingCreators, setPendingCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,130 +210,132 @@ export default function Kreator() {
         )}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        setIsDialogOpen(open);
-        if (!open) resetForm();
-      }}>
-        <DialogTrigger asChild>
-          <Button>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Tambah Kreator Baru
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCreator ? "Edit Kreator" : "Tambah Kreator Baru"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCreator 
-                ? "Perbarui informasi kreator"
-                : "Isi form di bawah untuk menambah kreator baru"}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nama Lengkap *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                disabled={!!editingCreator}
-              />
-            </div>
-            {!editingCreator && (
+      {userRole !== 'INVESTOR' && (
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Tambah Kreator Baru
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCreator ? "Edit Kreator" : "Tambah Kreator Baru"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingCreator 
+                  ? "Perbarui informasi kreator"
+                  : "Isi form di bawah untuk menambah kreator baru"}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="name">Nama Lengkap *</Label>
                 <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  minLength={6}
                 />
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="tiktok_account">Akun TikTok</Label>
-              <Input
-                id="tiktok_account"
-                value={formData.tiktok_account}
-                onChange={(e) => setFormData({ ...formData, tiktok_account: e.target.value })}
-                placeholder="@username"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="niche">Niche</Label>
-              <Input
-                id="niche"
-                value={formData.niche}
-                onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
-                placeholder="Fashion, Gaming, dll."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="base_salary">Gaji Pokok (Rp) *</Label>
-              <Input
-                id="base_salary"
-                type="number"
-                value={formData.base_salary}
-                onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
-                required
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="join_date">Tanggal Bergabung *</Label>
-              <Input
-                id="join_date"
-                type="date"
-                value={formData.join_date}
-                onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: "ACTIVE" | "PAUSED") => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="PAUSED">Paused</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  disabled={!!editingCreator}
+                />
+              </div>
+              {!editingCreator && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="tiktok_account">Akun TikTok</Label>
+                <Input
+                  id="tiktok_account"
+                  value={formData.tiktok_account}
+                  onChange={(e) => setFormData({ ...formData, tiktok_account: e.target.value })}
+                  placeholder="@username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="niche">Niche</Label>
+                <Input
+                  id="niche"
+                  value={formData.niche}
+                  onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+                  placeholder="Fashion, Gaming, dll."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="base_salary">Gaji Pokok (Rp) *</Label>
+                <Input
+                  id="base_salary"
+                  type="number"
+                  value={formData.base_salary}
+                  onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
+                  required
+                  min="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="join_date">Tanggal Bergabung *</Label>
+                <Input
+                  id="join_date"
+                  type="date"
+                  value={formData.join_date}
+                  onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: "ACTIVE" | "PAUSED") => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="PAUSED">Paused</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList>
@@ -369,7 +373,7 @@ export default function Kreator() {
                         <TableHead>Gaji Pokok</TableHead>
                         <TableHead>Tgl Bergabung</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Aksi</TableHead>
+                        {userRole !== 'INVESTOR' && <TableHead>Aksi</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -397,42 +401,44 @@ export default function Kreator() {
                               {creator.status}
                             </span>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(creator)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Arsipkan Kreator?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Kreator ini akan diarsipkan (soft delete). Data mereka tidak akan dihapus, tapi tidak akan tampil di daftar aktif.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(creator.id)}>
-                                      Ya, Arsipkan
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
+                          {userRole !== 'INVESTOR' && (
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(creator)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Arsipkan Kreator?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Kreator ini akan diarsipkan (soft delete). Data mereka tidak akan dihapus, tapi tidak akan tampil di daftar aktif.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDelete(creator.id)}>
+                                        Ya, Arsipkan
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>

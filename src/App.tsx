@@ -54,7 +54,7 @@ const App = () => (
             <Route
               path="/payroll"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <Payroll />
                   </DashboardLayout>
@@ -64,7 +64,7 @@ const App = () => (
             <Route
               path="/kreator"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <Kreator />
                   </DashboardLayout>
@@ -84,7 +84,7 @@ const App = () => (
             <Route
               path="/sales"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN", "CREATOR"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "CREATOR", "INVESTOR"]}>
                   <DashboardLayout>
                     <Sales />
                   </DashboardLayout>
@@ -134,7 +134,7 @@ const App = () => (
             <Route
               path="/inventaris"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <Inventaris />
                   </DashboardLayout>

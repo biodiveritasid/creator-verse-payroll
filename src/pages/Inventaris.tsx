@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Package, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface InventoryItem {
@@ -30,6 +31,7 @@ interface Profile {
 }
 
 export default function Inventaris() {
+  const { userRole } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,16 +172,17 @@ export default function Inventaris() {
               <CardTitle>Daftar Inventaris</CardTitle>
               <CardDescription>Kelola semua barang inventaris</CardDescription>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Barang
-                </Button>
-              </DialogTrigger>
+            {userRole !== 'INVESTOR' && (
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Barang
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>
@@ -276,7 +279,8 @@ export default function Inventaris() {
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -297,7 +301,7 @@ export default function Inventaris() {
                     <TableHead>Peminjam</TableHead>
                     <TableHead>Catatan</TableHead>
                     <TableHead>Tgl Ditambahkan</TableHead>
-                    <TableHead>Aksi</TableHead>
+                    {userRole !== 'INVESTOR' && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -319,15 +323,17 @@ export default function Inventaris() {
                       <TableCell>{item.profiles?.name || "-"}</TableCell>
                       <TableCell className="max-w-xs truncate">{item.catatan || "-"}</TableCell>
                       <TableCell>{formatDate(item.created_at)}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+                      {userRole !== 'INVESTOR' && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
