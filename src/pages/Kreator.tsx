@@ -266,7 +266,200 @@ export default function Kreator() {
               Tambah Kreator Baru
             </Button>
           </DialogTrigger>
-...
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingCreator ? "Edit Kreator" : "Tambah Kreator Baru"}</DialogTitle>
+              <DialogDescription>
+                {editingCreator 
+                  ? "Perbarui informasi kreator" 
+                  : "Masukkan data kreator baru. Untuk kreator baru, lengkapi Gaji Pokok dan info lainnya setelah dibuat."}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nama Lengkap *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    placeholder="Nama kreator"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    disabled={!!editingCreator}
+                    placeholder="email@example.com"
+                  />
+                </div>
+              </div>
+
+              {!editingCreator && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    placeholder="Minimal 6 karakter"
+                    minLength={6}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tiktok_account">Akun TikTok</Label>
+                  <Input
+                    id="tiktok_account"
+                    value={formData.tiktok_account}
+                    onChange={(e) => setFormData({ ...formData, tiktok_account: e.target.value })}
+                    placeholder="@username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="niche">Niche</Label>
+                  <Input
+                    id="niche"
+                    value={formData.niche}
+                    onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
+                    placeholder="Beauty, Fashion, Tech, dll"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="base_salary">Gaji Pokok (Rp)</Label>
+                  <Input
+                    id="base_salary"
+                    type="number"
+                    value={formData.base_salary}
+                    onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hourly_rate">Tarif Per Jam (Rp)</Label>
+                  <Input
+                    id="hourly_rate"
+                    type="number"
+                    value={formData.hourly_rate}
+                    onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="id_aturan_komisi">Aturan Komisi</Label>
+                  <Select 
+                    value={formData.id_aturan_komisi} 
+                    onValueChange={(value) => setFormData({ ...formData, id_aturan_komisi: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih aturan komisi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commissionRules.map((rule) => (
+                        <SelectItem key={rule.id} value={rule.id}>
+                          {rule.nama_aturan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="join_date">Tanggal Bergabung</Label>
+                  <Input
+                    id="join_date"
+                    type="date"
+                    value={formData.join_date}
+                    onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {editingCreator && (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select 
+                    value={formData.status} 
+                    onValueChange={(value) => setFormData({ ...formData, status: value as "ACTIVE" | "PAUSED" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                      <SelectItem value="PAUSED">PAUSED</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium mb-3">Informasi Bank</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nama_bank">Nama Bank</Label>
+                    <Input
+                      id="nama_bank"
+                      value={formData.nama_bank}
+                      onChange={(e) => setFormData({ ...formData, nama_bank: e.target.value })}
+                      placeholder="BCA, Mandiri, BRI, dll"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nomor_rekening">Nomor Rekening</Label>
+                      <Input
+                        id="nomor_rekening"
+                        value={formData.nomor_rekening}
+                        onChange={(e) => setFormData({ ...formData, nomor_rekening: e.target.value })}
+                        placeholder="1234567890"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nama_pemilik_rekening">Nama Pemilik Rekening</Label>
+                      <Input
+                        id="nama_pemilik_rekening"
+                        value={formData.nama_pemilik_rekening}
+                        onChange={(e) => setFormData({ ...formData, nama_pemilik_rekening: e.target.value })}
+                        placeholder="Sesuai rekening bank"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isLoading}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Menyimpan..." : (editingCreator ? "Perbarui" : "Tambah Kreator")}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
         </Dialog>
       )}
 
