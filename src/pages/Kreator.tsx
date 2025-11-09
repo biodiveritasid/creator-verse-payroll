@@ -343,14 +343,14 @@ export default function Kreator() {
               <div className="space-y-2">
                 <Label htmlFor="id_aturan_komisi">Skema Bonus</Label>
                 <Select
-                  value={formData.id_aturan_komisi}
-                  onValueChange={(value) => setFormData({ ...formData, id_aturan_komisi: value })}
+                  value={formData.id_aturan_komisi || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, id_aturan_komisi: value === "none" ? "" : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih skema bonus" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tidak ada bonus</SelectItem>
+                    <SelectItem value="none">Tidak ada bonus</SelectItem>
                     {commissionRules.map((rule) => (
                       <SelectItem key={rule.id} value={rule.id}>
                         {rule.nama_aturan}
