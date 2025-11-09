@@ -58,7 +58,7 @@ export default function Dashboard() {
       if (userRole === "ADMIN" || userRole === "INVESTOR") {
         const [salesData, creatorsData, payoutsData] = await Promise.all([
           supabase.from("penjualan_harian").select("gmv, commission_gross"),
-          supabase.from("profiles").select("id").eq("role", "CREATOR"),
+          supabase.from("profiles").select("id").eq("role", "CREATOR").eq("status", "ACTIVE"),
           supabase.from("payouts").select("total_payout").eq("status", "PAID"),
         ]);
 
