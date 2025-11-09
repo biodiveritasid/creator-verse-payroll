@@ -412,7 +412,7 @@ export type Database = {
       payout_status: "DRAFT" | "APPROVED" | "PAID"
       sales_source: "TIKTOK" | "SHOPEE"
       shift_type: "PAGI" | "SIANG" | "MALAM"
-      user_status: "ACTIVE" | "PAUSED" | "ARCHIVED"
+      user_status: "ACTIVE" | "PAUSED" | "ARCHIVED" | "PENDING_APPROVAL"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -545,7 +545,7 @@ export const Constants = {
       payout_status: ["DRAFT", "APPROVED", "PAID"],
       sales_source: ["TIKTOK", "SHOPEE"],
       shift_type: ["PAGI", "SIANG", "MALAM"],
-      user_status: ["ACTIVE", "PAUSED", "ARCHIVED"],
+      user_status: ["ACTIVE", "PAUSED", "ARCHIVED", "PENDING_APPROVAL"],
     },
   },
 } as const
