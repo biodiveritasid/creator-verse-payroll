@@ -34,7 +34,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       toast.success("Login berhasil!");
-      navigate("/dashboard");
+      navigate("/");
     }
 
     setIsLoading(false);
@@ -55,7 +55,7 @@ export default function Auth() {
     } else {
       toast.success("Pendaftaran berhasil! Akun Anda akan diaktifkan setelah disetujui oleh admin.");
       setSignupData({ email: "", password: "", name: "" });
-      navigate("/login?pending=true");
+      navigate("/auth?pending=true");
     }
 
     setIsLoading(false);
