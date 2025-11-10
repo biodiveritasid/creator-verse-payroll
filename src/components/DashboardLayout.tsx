@@ -126,6 +126,12 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    title: "Leaderboard",
+    href: "/leaderboard",
+    icon: TrendingUp,
+    roles: ["ADMIN", "CREATOR", "INVESTOR"],
+  },
+  {
     title: "Profil",
     href: "/profil",
     icon: User,

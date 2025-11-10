@@ -18,6 +18,7 @@ import Konfigurasi from "./pages/Konfigurasi";
 import Keuangan from "./pages/Keuangan";
 import Profil from "./pages/Profil";
 import Inventaris from "./pages/Inventaris";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -137,6 +138,16 @@ const App = () => (
                 <ProtectedRoute allowedRoles={["ADMIN", "INVESTOR"]}>
                   <DashboardLayout>
                     <Inventaris />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN", "CREATOR", "INVESTOR"]}>
+                  <DashboardLayout>
+                    <Leaderboard />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
