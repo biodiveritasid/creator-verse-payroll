@@ -148,7 +148,27 @@ export default function Kreator() {
 
         if (authError) throw authError;
 
-        toast.success("Kreator baru berhasil dibuat. Silakan klik Edit untuk melengkapi Gaji Pokok, Niche, dan info lainnya.");
+        // Update profile with all additional data
+        if (authData.user) {
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({
+              tiktok_account: formData.tiktok_account || null,
+              niche: formData.niche || null,
+              base_salary: parseFloat(formData.base_salary) || 0,
+              hourly_rate: parseFloat(formData.hourly_rate) || 0,
+              id_aturan_komisi: formData.id_aturan_komisi || null,
+              join_date: formData.join_date,
+              nama_bank: formData.nama_bank || null,
+              nomor_rekening: formData.nomor_rekening || null,
+              nama_pemilik_rekening: formData.nama_pemilik_rekening || null,
+            })
+            .eq("id", authData.user.id);
+
+          if (updateError) throw updateError;
+        }
+
+        toast.success("Kreator baru berhasil dibuat dan datanya telah disimpan.");
       }
 
       setIsDialogOpen(false);

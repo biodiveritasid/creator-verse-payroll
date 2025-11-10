@@ -160,16 +160,16 @@ export default function Keuangan() {
             keteranganParts.push(`Pembelian: ${validated.Pembelian}`);
           }
           
-          // Parse date - handle DD-MM-YYYY format
-          let dateStr = validated.Tanggal;
-          if (dateStr.includes('-') && dateStr.split('-')[0].length === 2) {
-            // DD-MM-YYYY format
-            const [day, month, year] = dateStr.split('-');
-            dateStr = `${year}-${month}-${day}`;
+          // Parse date robustly
+          let parsedDate = new Date(validated.Tanggal);
+          
+          // Validate the date
+          if (isNaN(parsedDate.getTime())) {
+            throw new Error(`Tanggal tidak valid: ${validated.Tanggal}`);
           }
           
           validEntries.push({
-            date: new Date(dateStr).toISOString(),
+            date: parsedDate.toISOString(),
             type: 'CAPITAL_OUT', // Default to expense
             amount: validated.Harga,
             title: validated.Keterangan,

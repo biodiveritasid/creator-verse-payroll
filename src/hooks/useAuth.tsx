@@ -25,94 +25,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const checkUserStatusAndSetState = async (session: Session | null) => {
+    if (!session?.user) {
+      setSession(null);
+      setUser(null);
+      setUserRole(null);
+      setUserName(null);
+      setLoading(false);
+      return;
+    }
+
+    setSession(session);
+    setUser(session.user);
+    setLoading(true);
+
+    try {
+      const [userRoleData, profileData] = await Promise.all([
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("name, status")
+          .eq("id", session.user.id)
+          .single()
+      ]);
+      
+      // Check if user is pending approval
+      if (profileData.data?.status === "PENDING_APPROVAL") {
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setUserRole(null);
+        setUserName(null);
+        setLoading(false);
+        navigate("/auth?pending=true");
+        return;
+      }
+      
+      setUserRole(userRoleData.data?.role ?? null);
+      setUserName(profileData.data?.name ?? null);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error checking user status:", error);
+      setUserRole(null);
+      setUserName(null);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-      if (session?.user) {
-        // Set loading immediately when user logs in
-        setLoading(true);
-        // Fetch role and name from profiles table (security critical)
-        setTimeout(async () => {
-          const [userRoleData, profileData] = await Promise.all([
-            supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .single(),
-            supabase
-              .from("profiles")
-              .select("name, status")
-              .eq("id", session.user.id)
-              .single()
-          ]);
-          
-          // Check if user is pending approval
-          if (profileData.data?.status === "PENDING_APPROVAL") {
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-            setUserRole(null);
-            setUserName(null);
-            setLoading(false);
-            navigate("/auth?pending=true");
-            return;
-          }
-          
-          setUserRole(userRoleData.data?.role ?? null);
-          setUserName(profileData.data?.name ?? null);
-          setLoading(false);
-        }, 0);
-      } else {
-        setUserRole(null);
-        setUserName(null);
-        setLoading(false);
-      }
+        await checkUserStatusAndSetState(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          const [userRoleData, profileData] = await Promise.all([
-            supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .single(),
-            supabase
-              .from("profiles")
-              .select("name, status")
-              .eq("id", session.user.id)
-              .single()
-          ]);
-          
-          // Check if user is pending approval
-          if (profileData.data?.status === "PENDING_APPROVAL") {
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-            setUserRole(null);
-            setUserName(null);
-            setLoading(false);
-            navigate("/auth?pending=true");
-            return;
-          }
-          
-          setUserRole(userRoleData.data?.role ?? null);
-          setUserName(profileData.data?.name ?? null);
-          setLoading(false);
-        }, 0);
-      } else {
-        setLoading(false);
-      }
+      checkUserStatusAndSetState(session);
     });
 
     return () => subscription.unsubscribe();

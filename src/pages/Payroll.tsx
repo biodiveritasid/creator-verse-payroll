@@ -123,20 +123,27 @@ export default function Payroll() {
     return count;
   };
 
-  const calculateCommissionBonus = (gmv: number, commissionGross: number, slabs: CommissionSlab[]) => {
-    // Sort slabs by min descending to find the highest applicable tier
-    const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
+  const calculateCommissionBonus = (totalGmv: number, totalCommission: number, slabs: CommissionSlab[]) => {
+    // Calculate average commission rate
+    const averageCommissionRate = totalGmv > 0 ? totalCommission / totalGmv : 0;
     
-    // Find the first slab where GMV >= slab.min
-    const targetSlab = sortedSlabs.find(slab => gmv >= slab.min);
+    // Sort slabs by min ascending for progressive calculation
+    const sortedSlabs = [...slabs].sort((a, b) => a.min - b.min);
     
-    // If no slab matches, return 0
-    if (!targetSlab) return 0;
+    let totalBonus = 0;
     
-    // Calculate bonus using the target slab's rate
-    const bonus = commissionGross * targetSlab.rate;
+    // Progressive calculation: calculate bonus for each slab
+    for (const slab of sortedSlabs) {
+      const gmvInThisSlab = Math.max(0, Math.min(totalGmv, slab.max) - slab.min);
+      
+      if (gmvInThisSlab > 0) {
+        const commissionInThisSlab = gmvInThisSlab * averageCommissionRate;
+        const bonusForThisSlab = commissionInThisSlab * slab.rate;
+        totalBonus += bonusForThisSlab;
+      }
+    }
     
-    return Math.round(bonus);
+    return Math.round(totalBonus);
   };
 
   const handleCalculatePayroll = async () => {
