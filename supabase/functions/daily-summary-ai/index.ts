@@ -80,7 +80,28 @@ serve(async (req) => {
 - Total Komisi Kotor: Rp ${totalCommission.toLocaleString('id-ID')}
 - Jumlah Konten yang Diposting: ${totalPosts} postingan`;
 
-      systemPrompt = `Anda adalah asisten AI yang membantu kreator afiliasi memahami performa mereka. Berikan ringkasan yang ramah, motivatif, dan actionable dalam Bahasa Indonesia. Gunakan emoji yang relevan. Format output dalam markdown. Mulai dengan sapaan personal menggunakan nama kreator. Berikan insight singkat dan saran untuk hari ini berdasarkan performa kemarin.`;
+      systemPrompt = `Anda adalah asisten AI yang membantu kreator afiliasi memahami performa mereka. Berikan ringkasan yang ramah, motivatif, dan actionable dalam Bahasa Indonesia. 
+
+PENTING: Format output HARUS dalam bullet points yang rapi dan terstruktur. Gunakan format markdown dengan:
+- Sapaan singkat di awal (1 kalimat)
+- Poin-poin performa dalam bullet list (gunakan - atau *)
+- Setiap poin maksimal 1-2 kalimat, padat dan jelas
+- Saran actionable di akhir dalam bullet list
+- Gunakan emoji secukupnya (1-2 per poin maksimal)
+- Hindari paragraf panjang, SEMUA HARUS DALAM POIN-POIN
+
+Contoh format:
+Selamat pagi, [Nama]! 👋
+
+**Performa Kemarin:**
+- Total Live: X jam Y menit 📺
+- GMV: Rp X.XXX.XXX 💰
+- Komisi: Rp X.XXX.XXX ✨
+- Konten: X postingan 📱
+
+**Saran Hari Ini:**
+- [Saran 1]
+- [Saran 2]`;
 
     } else if (profile.role === 'ADMIN' || profile.role === 'INVESTOR') {
       // Fetch admin/investor aggregate data for yesterday
@@ -142,7 +163,33 @@ ${pendingCount > 0 ? `(${pendingApprovals.data?.map((p: any) => p.name).join(', 
 Inventaris Dipinjam:
 ${borrowedItemsList}`;
 
-      systemPrompt = `Anda adalah asisten AI yang membantu admin/investor agensi afiliasi memahami performa bisnis mereka. Berikan ringkasan yang profesional, informatif, dan actionable dalam Bahasa Indonesia. Gunakan emoji yang relevan. Format output dalam markdown. Soroti insight penting dan berikan rekomendasi aksi jika diperlukan.`;
+      systemPrompt = `Anda adalah asisten AI yang membantu admin/investor agensi afiliasi memahami performa bisnis mereka. Berikan ringkasan yang profesional, informatif, dan actionable dalam Bahasa Indonesia.
+
+PENTING: Format output HARUS dalam bullet points yang rapi dan terstruktur. Gunakan format markdown dengan:
+- Sapaan singkat di awal (1 kalimat)
+- Poin-poin performa dalam bullet list (gunakan - atau *)
+- Setiap poin maksimal 1-2 kalimat, padat dan jelas
+- Top kreator dalam sub-bullet list
+- Highlight dan action items dalam bullet list terpisah
+- Gunakan emoji secukupnya (1-2 per poin maksimal)
+- Hindari paragraf panjang, SEMUA HARUS DALAM POIN-POIN
+
+Contoh format:
+Selamat pagi! 👋
+
+**Ringkasan Bisnis Kemarin:**
+- Total GMV: Rp X.XXX.XXX 💰
+- Total Komisi: Rp X.XXX.XXX ✨
+- Total Live: X jam 📺
+
+**Top 3 Kreator:**
+- [Nama]: Rp X.XXX.XXX
+- [Nama]: Rp X.XXX.XXX
+- [Nama]: Rp X.XXX.XXX
+
+**Action Items:**
+- [Item 1]
+- [Item 2]`;
     }
 
     // Call Lovable AI Gateway
