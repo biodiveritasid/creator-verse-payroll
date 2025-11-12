@@ -59,14 +59,14 @@ export function DailySummaryCard() {
         <CardTitle className="text-lg">Ringkasan Harian AI</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-sm leading-relaxed space-y-3">
+        <div className="text-sm leading-relaxed space-y-2">
           <ReactMarkdown 
-            className="[&>p]:mb-2 [&>ul]:mb-2 [&>ul]:ml-4 [&>ul>li]:mb-1 [&>h3]:text-sm [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-3 [&>strong]:font-semibold [&>strong]:text-foreground"
             components={{
-              p: ({ children }) => <p className="text-muted-foreground mb-2">{children}</p>,
-              ul: ({ children }) => <ul className="list-none space-y-1 ml-0">{children}</ul>,
-              li: ({ children }) => <li className="text-muted-foreground flex items-start gap-1.5"><span className="mt-0.5">•</span><span className="flex-1">{children}</span></li>,
-              strong: ({ children }) => <strong className="text-foreground font-semibold block mb-2 text-xs uppercase tracking-wide">{children}</strong>,
+              p: ({ children }) => <p className="text-muted-foreground mb-2 text-sm">{children}</p>,
+              ul: ({ children }) => <ul className="list-none space-y-1.5 ml-0">{children}</ul>,
+              li: ({ children }) => <li className="text-muted-foreground text-sm flex items-start gap-2"><span className="mt-0.5 text-primary">•</span><span className="flex-1">{children}</span></li>,
+              strong: ({ children }) => <strong className="text-foreground font-semibold block mb-2 mt-3 text-xs uppercase tracking-wide">{children}</strong>,
+              h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mb-2 mt-3">{children}</h3>,
             }}
           >
             {data?.summary || 'Tidak ada ringkasan tersedia.'}
