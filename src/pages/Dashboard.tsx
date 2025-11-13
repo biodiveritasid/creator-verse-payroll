@@ -13,75 +13,43 @@ export default function Dashboard() {
       if (!user) return null;
 
       if (userRole === "CREATOR") {
-        const [salesData, sessionsData, payoutsData, commissionRulesRes] = await Promise.all([
-          supabase
-            .from("penjualan_harian")
-            .select("gmv, commission_gross")
-            .eq("user_id", user.id),
-          supabase
-            .from("sesi_live")
-            .select("duration_minutes")
-            .eq("user_id", user.id),
-          supabase
-            .from("payouts")
-            .select("total_payout")
-            .eq("user_id", user.id)
-            .eq("status", "PAID"),
-          supabase.from("aturan_komisi").select("*").maybeSingle(),
-        ]);
+        const { data, error } = await supabase.rpc('get_dashboard_stats_creator', {
+          creator_user_id: user.id
+        });
 
-        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
-        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
-        const totalMinutes = sessionsData.data?.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) || 0;
-        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
+        if (error) throw error;
 
-        // Calculate estimated bonus
-        let estimatedBonus = 0;
-        if (commissionRulesRes.data?.slabs && totalGMV > 0) {
-          const slabs = commissionRulesRes.data.slabs as any[];
-          const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
-          const targetSlab = sortedSlabs.find(slab => totalGMV >= slab.min);
-          if (targetSlab) {
-            estimatedBonus = Math.round(totalCommission * targetSlab.rate);
-          }
-        }
-
+        const result = data?.[0];
         return {
-          totalGMV,
-          totalCommission,
-          totalMinutes,
-          totalPayout,
-          estimatedBonus,
+          totalGMV: result?.total_gmv || 0,
+          totalCommission: result?.total_commission || 0,
+          totalMinutes: result?.total_minutes || 0,
+          totalPayout: result?.total_payout || 0,
+          estimatedBonus: result?.estimated_bonus || 0,
         };
       }
 
       if (userRole === "ADMIN" || userRole === "INVESTOR") {
-        const [salesData, creatorsData, payoutsData] = await Promise.all([
-          supabase.from("penjualan_harian").select("gmv, commission_gross"),
-          supabase.from("profiles").select("id").eq("role", "CREATOR").eq("status", "ACTIVE"),
-          supabase.from("payouts").select("total_payout").eq("status", "PAID"),
-        ]);
+        const { data, error } = await supabase.rpc('get_dashboard_stats_admin');
 
-        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
-        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
-        const totalCreators = creatorsData.data?.length || 0;
-        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
+        if (error) throw error;
 
+        const result = data?.[0];
         return {
-          totalGMV,
-          totalCommission,
-          totalCreators,
-          totalPayout,
+          totalGMV: result?.total_gmv || 0,
+          totalCommission: result?.total_commission || 0,
+          totalCreators: result?.total_creators || 0,
+          totalPayout: result?.total_payout || 0,
         };
       }
 
       return null;
     },
     enabled: !!user && !!userRole,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const formatCurrency = (value: number) => {

@@ -29,12 +29,14 @@ export default function KreatorDetail() {
           .from("sesi_live")
           .select("*")
           .eq("user_id", creatorId)
-          .order("date", { ascending: false }),
+          .order("date", { ascending: false })
+          .limit(50),
         supabase
           .from("payouts")
           .select("*")
           .eq("user_id", creatorId)
-          .order("period_start", { ascending: false }),
+          .order("period_start", { ascending: false })
+          .limit(12),
         supabase
           .from("inventory_items")
           .select("*")
@@ -53,6 +55,7 @@ export default function KreatorDetail() {
       };
     },
     enabled: !!creatorId,
+    staleTime: 2 * 60 * 1000,
   });
 
   const formatCurrency = (value: number | null) => {

@@ -424,6 +424,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_creator_sales_stats_by_range: {
+        Args: { end_date: string; start_date: string }
+        Returns: {
+          commission: number
+          gmv: number
+          name: string
+          user_id: string
+        }[]
+      }
+      get_dashboard_stats_admin: {
+        Args: never
+        Returns: {
+          total_commission: number
+          total_creators: number
+          total_gmv: number
+          total_payout: number
+        }[]
+      }
+      get_dashboard_stats_creator: {
+        Args: { creator_user_id: string }
+        Returns: {
+          estimated_bonus: number
+          total_commission: number
+          total_gmv: number
+          total_minutes: number
+          total_payout: number
+        }[]
+      }
       get_leaderboard_data: {
         Args: { end_date: string; start_date: string }
         Returns: {

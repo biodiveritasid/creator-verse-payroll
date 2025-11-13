@@ -131,29 +131,16 @@ export default function Sales() {
 
       setSalesData(salesWithProfiles);
 
-      // Calculate per-creator stats for admin
+      // Calculate per-creator stats for admin using RPC
       if (currentUser?.role === "ADMIN") {
-        const creatorStats = new Map<string, { name: string; gmv: number; commission: number }>();
-        
-        salesWithProfiles.forEach(sale => {
-          const existing = creatorStats.get(sale.user_id) || { 
-            name: sale.profiles?.name || "Unknown", 
-            gmv: 0, 
-            commission: 0 
-          };
-          creatorStats.set(sale.user_id, {
-            name: existing.name,
-            gmv: existing.gmv + sale.gmv,
-            commission: existing.commission + sale.commission_gross
-          });
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_creator_sales_stats_by_range', {
+          start_date: start,
+          end_date: end
         });
 
-        const creatorSalesArray = Array.from(creatorStats.entries()).map(([user_id, data]) => ({
-          user_id,
-          ...data
-        }));
+        if (rpcError) throw rpcError;
 
-        setCreatorSales(creatorSalesArray);
+        setCreatorSales(rpcData || []);
       }
     } catch (error: any) {
       toast({
