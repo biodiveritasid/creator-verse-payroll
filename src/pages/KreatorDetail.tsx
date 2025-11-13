@@ -29,14 +29,12 @@ export default function KreatorDetail() {
           .from("sesi_live")
           .select("*")
           .eq("user_id", creatorId)
-          .order("date", { ascending: false })
-          .limit(50), // Only fetch latest 50 sessions
+          .order("date", { ascending: false }),
         supabase
           .from("payouts")
           .select("*")
           .eq("user_id", creatorId)
-          .order("period_start", { ascending: false })
-          .limit(12), // Only fetch latest 12 payouts (1 year)
+          .order("period_start", { ascending: false }),
         supabase
           .from("inventory_items")
           .select("*")

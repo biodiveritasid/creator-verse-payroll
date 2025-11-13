@@ -47,8 +47,7 @@ export default function Konten() {
       let query = supabase
         .from("content_logs")
         .select("*, profiles(name)")
-        .order("date", { ascending: false })
-        .limit(50); // Only fetch latest 50 logs
+        .order("date", { ascending: false });
 
       // If creator, only show their own logs
       if (userRole === "CREATOR") {
