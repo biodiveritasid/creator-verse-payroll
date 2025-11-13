@@ -63,6 +63,11 @@ export default function Payroll() {
 
   const fetchPayouts = async () => {
     try {
+      // Calculate date 6 months ago
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const filterDate = sixMonthsAgo.toISOString().split('T')[0];
+
       const { data, error } = await supabase
         .from("payouts")
         .select(`
@@ -72,6 +77,7 @@ export default function Payroll() {
             email
           )
         `)
+        .gte("period_start", filterDate) // Only last 6 months
         .order("created_at", { ascending: false });
 
       if (error) throw error;

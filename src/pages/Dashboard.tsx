@@ -13,71 +13,56 @@ export default function Dashboard() {
       if (!user) return null;
 
       if (userRole === "CREATOR") {
-        const [salesData, sessionsData, payoutsData, commissionRulesRes] = await Promise.all([
-          supabase
-            .from("penjualan_harian")
-            .select("gmv, commission_gross")
-            .eq("user_id", user.id),
-          supabase
-            .from("sesi_live")
-            .select("duration_minutes")
-            .eq("user_id", user.id),
-          supabase
-            .from("payouts")
-            .select("total_payout")
-            .eq("user_id", user.id)
-            .eq("status", "PAID"),
-          supabase.from("aturan_komisi").select("*").maybeSingle(),
-        ]);
+        // Use RPC function for optimized aggregation
+        const { data, error } = await supabase.rpc("get_dashboard_stats_creator", {
+          creator_user_id: user.id,
+        });
 
-        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
-        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
-        const totalMinutes = sessionsData.data?.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) || 0;
-        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
+        if (error) throw error;
 
-        // Calculate estimated bonus
-        let estimatedBonus = 0;
-        if (commissionRulesRes.data?.slabs && totalGMV > 0) {
-          const slabs = commissionRulesRes.data.slabs as any[];
-          const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
-          const targetSlab = sortedSlabs.find(slab => totalGMV >= slab.min);
-          if (targetSlab) {
-            estimatedBonus = Math.round(totalCommission * targetSlab.rate);
-          }
-        }
-
-        return {
-          totalGMV,
-          totalCommission,
-          totalMinutes,
-          totalPayout,
-          estimatedBonus,
-        };
+        return data && data.length > 0
+          ? {
+              totalGMV: Number(data[0].total_gmv),
+              totalCommission: Number(data[0].total_commission),
+              totalMinutes: Number(data[0].total_minutes),
+              totalPayout: Number(data[0].total_payout),
+              estimatedBonus: Number(data[0].estimated_bonus),
+            }
+          : {
+              totalGMV: 0,
+              totalCommission: 0,
+              totalMinutes: 0,
+              totalPayout: 0,
+              estimatedBonus: 0,
+            };
       }
 
       if (userRole === "ADMIN" || userRole === "INVESTOR") {
-        const [salesData, creatorsData, payoutsData] = await Promise.all([
-          supabase.from("penjualan_harian").select("gmv, commission_gross"),
-          supabase.from("profiles").select("id").eq("role", "CREATOR").eq("status", "ACTIVE"),
-          supabase.from("payouts").select("total_payout").eq("status", "PAID"),
-        ]);
+        // Use RPC function for optimized aggregation
+        const { data, error } = await supabase.rpc("get_dashboard_stats_admin");
 
-        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
-        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
-        const totalCreators = creatorsData.data?.length || 0;
-        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
+        if (error) throw error;
 
-        return {
-          totalGMV,
-          totalCommission,
-          totalCreators,
-          totalPayout,
-        };
+        return data && data.length > 0
+          ? {
+              totalGMV: Number(data[0].total_gmv),
+              totalCommission: Number(data[0].total_commission),
+              totalCreators: Number(data[0].total_creators),
+              totalPayout: Number(data[0].total_payout),
+            }
+          : {
+              totalGMV: 0,
+              totalCommission: 0,
+              totalCreators: 0,
+              totalPayout: 0,
+            };
       }
 
       return null;
     },
     enabled: !!user && !!userRole,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000,
   });
 
   const formatCurrency = (value: number) => {
