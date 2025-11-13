@@ -12,14 +12,28 @@ export function DailySummaryCard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["daily-summary-ai", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('daily-summary-ai');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
       
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase.functions.invoke('daily-summary-ai', {
+          body: {},
+        });
+        
+        clearTimeout(timeoutId);
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
     },
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
-    retry: 1,
-    enabled: !!user?.id, // Only run when user is available
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes (reduced from 1 hour)
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
+    retry: 0, // Don't retry on failure
+    enabled: !!user?.id,
+    refetchOnMount: false, // Don't refetch on component mount
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
   });
 
   if (isLoading) {
@@ -49,7 +63,7 @@ export function DailySummaryCard() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Gagal memuat ringkasan. Silakan refresh halaman.
+            Ringkasan AI tidak tersedia saat ini. Sistem akan mencoba lagi nanti.
           </p>
         </CardContent>
       </Card>
