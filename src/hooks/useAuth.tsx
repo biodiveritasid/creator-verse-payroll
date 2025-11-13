@@ -40,23 +40,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
 
     try {
-      // Fetch profile with role, name, and status in a single query
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("name, status, role")
-        .eq("id", session.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        setUserRole(null);
-        setUserName(null);
-        setLoading(false);
-        return;
-      }
+      const [userRoleData, profileData] = await Promise.all([
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("name, status")
+          .eq("id", session.user.id)
+          .single()
+      ]);
       
       // Check if user is pending approval
-      if (profileData?.status === "PENDING_APPROVAL") {
+      if (profileData.data?.status === "PENDING_APPROVAL") {
         await supabase.auth.signOut();
         setSession(null);
         setUser(null);
@@ -67,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      setUserRole(profileData?.role ?? null);
-      setUserName(profileData?.name ?? null);
+      setUserRole(userRoleData.data?.role ?? null);
+      setUserName(profileData.data?.name ?? null);
       setLoading(false);
     } catch (error) {
       console.error("Error checking user status:", error);

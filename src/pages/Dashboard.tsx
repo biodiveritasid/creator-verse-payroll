@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Users, Clock } from "lucide-react";
-import { DailySummaryCard } from "@/components/DailySummaryCard";
 
 export default function Dashboard() {
   const { user, userRole } = useAuth();
@@ -97,8 +96,6 @@ export default function Dashboard() {
           Selamat datang kembali! Ini adalah ringkasan performa Anda.
         </p>
       </div>
-
-      <DailySummaryCard />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {userRole === "CREATOR" && (
