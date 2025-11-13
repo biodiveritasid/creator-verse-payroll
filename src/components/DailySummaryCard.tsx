@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/hooks/useAuth";
 
 export function DailySummaryCard() {
+  const { user } = useAuth();
+  
   const { data, isLoading, error } = useQuery({
-    queryKey: ["daily-summary-ai"],
+    queryKey: ["daily-summary-ai", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('daily-summary-ai');
       
@@ -16,6 +19,7 @@ export function DailySummaryCard() {
     },
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
     retry: 1,
+    enabled: !!user?.id, // Only run when user is available
   });
 
   if (isLoading) {
