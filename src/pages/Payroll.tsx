@@ -63,11 +63,6 @@ export default function Payroll() {
 
   const fetchPayouts = async () => {
     try {
-      // Filter to show only last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const filterDate = sixMonthsAgo.toISOString().split('T')[0];
-
       const { data, error } = await supabase
         .from("payouts")
         .select(`
@@ -77,7 +72,6 @@ export default function Payroll() {
             email
           )
         `)
-        .gte("period_start", filterDate)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -129,20 +123,27 @@ export default function Payroll() {
     return count;
   };
 
-  const calculateCommissionBonus = (gmv: number, commissionGross: number, slabs: CommissionSlab[]) => {
-    // Sort slabs by min descending to find the highest applicable tier
-    const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
+  const calculateCommissionBonus = (totalGmv: number, totalCommission: number, slabs: CommissionSlab[]) => {
+    // Calculate average commission rate
+    const averageCommissionRate = totalGmv > 0 ? totalCommission / totalGmv : 0;
     
-    // Find the first slab where GMV >= slab.min
-    const targetSlab = sortedSlabs.find(slab => gmv >= slab.min);
+    // Sort slabs by min ascending for progressive calculation
+    const sortedSlabs = [...slabs].sort((a, b) => a.min - b.min);
     
-    // If no slab matches, return 0
-    if (!targetSlab) return 0;
+    let totalBonus = 0;
     
-    // Calculate bonus using the target slab's rate on entire commission
-    const bonus = commissionGross * targetSlab.rate;
+    // Progressive calculation: calculate bonus for each slab
+    for (const slab of sortedSlabs) {
+      const gmvInThisSlab = Math.max(0, Math.min(totalGmv, slab.max) - slab.min);
+      
+      if (gmvInThisSlab > 0) {
+        const commissionInThisSlab = gmvInThisSlab * averageCommissionRate;
+        const bonusForThisSlab = commissionInThisSlab * slab.rate;
+        totalBonus += bonusForThisSlab;
+      }
+    }
     
-    return Math.round(bonus);
+    return Math.round(totalBonus);
   };
 
   const handleCalculatePayroll = async () => {

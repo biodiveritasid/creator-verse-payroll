@@ -13,43 +13,71 @@ export default function Dashboard() {
       if (!user) return null;
 
       if (userRole === "CREATOR") {
-        const { data, error } = await supabase.rpc('get_dashboard_stats_creator', {
-          creator_user_id: user.id
-        });
+        const [salesData, sessionsData, payoutsData, commissionRulesRes] = await Promise.all([
+          supabase
+            .from("penjualan_harian")
+            .select("gmv, commission_gross")
+            .eq("user_id", user.id),
+          supabase
+            .from("sesi_live")
+            .select("duration_minutes")
+            .eq("user_id", user.id),
+          supabase
+            .from("payouts")
+            .select("total_payout")
+            .eq("user_id", user.id)
+            .eq("status", "PAID"),
+          supabase.from("aturan_komisi").select("*").maybeSingle(),
+        ]);
 
-        if (error) throw error;
+        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
+        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
+        const totalMinutes = sessionsData.data?.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0) || 0;
+        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
 
-        const result = data?.[0];
+        // Calculate estimated bonus
+        let estimatedBonus = 0;
+        if (commissionRulesRes.data?.slabs && totalGMV > 0) {
+          const slabs = commissionRulesRes.data.slabs as any[];
+          const sortedSlabs = [...slabs].sort((a, b) => b.min - a.min);
+          const targetSlab = sortedSlabs.find(slab => totalGMV >= slab.min);
+          if (targetSlab) {
+            estimatedBonus = Math.round(totalCommission * targetSlab.rate);
+          }
+        }
+
         return {
-          totalGMV: result?.total_gmv || 0,
-          totalCommission: result?.total_commission || 0,
-          totalMinutes: result?.total_minutes || 0,
-          totalPayout: result?.total_payout || 0,
-          estimatedBonus: result?.estimated_bonus || 0,
+          totalGMV,
+          totalCommission,
+          totalMinutes,
+          totalPayout,
+          estimatedBonus,
         };
       }
 
       if (userRole === "ADMIN" || userRole === "INVESTOR") {
-        const { data, error } = await supabase.rpc('get_dashboard_stats_admin');
+        const [salesData, creatorsData, payoutsData] = await Promise.all([
+          supabase.from("penjualan_harian").select("gmv, commission_gross"),
+          supabase.from("profiles").select("id").eq("role", "CREATOR").eq("status", "ACTIVE"),
+          supabase.from("payouts").select("total_payout").eq("status", "PAID"),
+        ]);
 
-        if (error) throw error;
+        const totalGMV = salesData.data?.reduce((acc, curr) => acc + Number(curr.gmv), 0) || 0;
+        const totalCommission = salesData.data?.reduce((acc, curr) => acc + Number(curr.commission_gross), 0) || 0;
+        const totalCreators = creatorsData.data?.length || 0;
+        const totalPayout = payoutsData.data?.reduce((acc, curr) => acc + Number(curr.total_payout), 0) || 0;
 
-        const result = data?.[0];
         return {
-          totalGMV: result?.total_gmv || 0,
-          totalCommission: result?.total_commission || 0,
-          totalCreators: result?.total_creators || 0,
-          totalPayout: result?.total_payout || 0,
+          totalGMV,
+          totalCommission,
+          totalCreators,
+          totalPayout,
         };
       }
 
       return null;
     },
     enabled: !!user && !!userRole,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
   });
 
   const formatCurrency = (value: number) => {

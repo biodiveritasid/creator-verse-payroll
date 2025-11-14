@@ -31,8 +31,7 @@ export default function SesiLive() {
       let query = supabase
         .from("sesi_live")
         .select("*, profiles(name)")
-        .order("check_in", { ascending: false })
-        .limit(100);
+        .order("check_in", { ascending: false });
 
       // If creator, only show their own sessions
       if (userRole === "CREATOR") {
@@ -45,7 +44,6 @@ export default function SesiLive() {
       return data as any;
     },
     enabled: !!user,
-    staleTime: 2 * 60 * 1000,
   });
 
   // Update live duration every second
