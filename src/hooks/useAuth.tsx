@@ -26,10 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   const checkUserStatusAndSetState = async (session: Session | null) => {
-    console.log("checkUserStatusAndSetState called with:", session?.user?.email);
-    
     if (!session?.user) {
-      console.log("No session, clearing state");
       setSession(null);
       setUser(null);
       setUserRole(null);
@@ -49,8 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 5000);
 
     try {
-      console.log("Fetching profile for user:", session.user.id);
-      
       // Fetch profile data which contains role and status
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -59,7 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       clearTimeout(timeoutId);
-      console.log("Profile data:", profileData, "Error:", profileError);
       
       if (profileError) {
         console.error("Error fetching profile:", profileError);
@@ -71,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Check if user is pending approval
       if (profileData?.status === "PENDING_APPROVAL") {
-        console.log("User is pending approval, signing out");
         await supabase.auth.signOut();
         setSession(null);
         setUser(null);
@@ -82,11 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      console.log("Setting user role:", profileData?.role, "name:", profileData?.name);
       setUserRole(profileData?.role ?? null);
       setUserName(profileData?.name ?? null);
       setLoading(false);
-      console.log("Auth state updated successfully - loading set to false");
     } catch (error) {
       clearTimeout(timeoutId);
       console.error("Error checking user status:", error);
@@ -108,14 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, "User:", session?.user?.email);
         await checkUserStatusAndSetStateWrapper(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session?.user?.email);
       checkUserStatusAndSetStateWrapper(session);
     });
 
