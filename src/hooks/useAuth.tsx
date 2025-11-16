@@ -26,7 +26,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   const checkUserStatusAndSetState = async (session: Session | null) => {
+    console.log("checkUserStatusAndSetState called with:", session?.user?.email);
+    
     if (!session?.user) {
+      console.log("No session, clearing state");
       setSession(null);
       setUser(null);
       setUserRole(null);
@@ -40,21 +43,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
 
     try {
-      const [userRoleData, profileData] = await Promise.all([
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single(),
-        supabase
-          .from("profiles")
-          .select("name, status")
-          .eq("id", session.user.id)
-          .single()
-      ]);
+      console.log("Fetching profile for user:", session.user.id);
+      
+      // Fetch profile data which contains role and status
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("name, role, status")
+        .eq("id", session.user.id)
+        .single();
+      
+      console.log("Profile data:", profileData, "Error:", profileError);
+      
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        setUserRole(null);
+        setUserName(null);
+        setLoading(false);
+        return;
+      }
       
       // Check if user is pending approval
-      if (profileData.data?.status === "PENDING_APPROVAL") {
+      if (profileData?.status === "PENDING_APPROVAL") {
+        console.log("User is pending approval, signing out");
         await supabase.auth.signOut();
         setSession(null);
         setUser(null);
@@ -65,9 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      setUserRole(userRoleData.data?.role ?? null);
-      setUserName(profileData.data?.name ?? null);
+      console.log("Setting user role:", profileData?.role, "name:", profileData?.name);
+      setUserRole(profileData?.role ?? null);
+      setUserName(profileData?.name ?? null);
       setLoading(false);
+      console.log("Auth state updated successfully");
     } catch (error) {
       console.error("Error checking user status:", error);
       setUserRole(null);
@@ -80,12 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, "User:", session?.user?.email);
         await checkUserStatusAndSetState(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session?.user?.email);
       checkUserStatusAndSetState(session);
     });
 
