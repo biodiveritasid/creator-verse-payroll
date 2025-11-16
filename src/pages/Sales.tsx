@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import SalesStatsCards from "@/components/sales/SalesStatsCards";
 import CreatorSalesTable from "@/components/sales/CreatorSalesTable";
@@ -43,7 +43,6 @@ export default function Sales() {
     gmv: "",
     commission_gross: ""
   });
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchCurrentUser();
@@ -156,11 +155,7 @@ export default function Sales() {
         setCreatorSales(creatorSalesArray);
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -185,10 +180,7 @@ export default function Sales() {
 
       if (error) throw error;
 
-      toast({
-        title: "Berhasil",
-        description: "Data penjualan berhasil ditambahkan"
-      });
+      toast.success("Data penjualan berhasil ditambahkan");
 
       setDialogOpen(false);
       setFormData({
@@ -199,11 +191,7 @@ export default function Sales() {
       });
       applyDateFilter();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     }
   };
 

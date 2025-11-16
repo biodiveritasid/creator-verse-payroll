@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FileText, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ContentLog {
@@ -33,7 +33,6 @@ export default function Konten() {
     post_number: "",
     is_counted: true
   });
-  const { toast } = useToast();
   const { user, userRole } = useAuth();
 
   useEffect(() => {
@@ -59,11 +58,7 @@ export default function Konten() {
       if (error) throw error;
       setContentLogs(data as any || []);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -87,10 +82,7 @@ export default function Konten() {
 
       if (error) throw error;
 
-      toast({
-        title: "Berhasil",
-        description: "Log konten berhasil ditambahkan"
-      });
+      toast.success("Log konten berhasil ditambahkan");
 
       setDialogOpen(false);
       setFormData({
@@ -101,11 +93,7 @@ export default function Konten() {
       });
       fetchContentLogs();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     }
   };
 
