@@ -42,6 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(session.user);
     setLoading(true);
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn("Auth check timeout - setting loading to false");
+      setLoading(false);
+    }, 5000);
+
     try {
       console.log("Fetching profile for user:", session.user.id);
       
@@ -52,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", session.user.id)
         .single();
       
+      clearTimeout(timeoutId);
       console.log("Profile data:", profileData, "Error:", profileError);
       
       if (profileError) {
@@ -79,8 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(profileData?.role ?? null);
       setUserName(profileData?.name ?? null);
       setLoading(false);
-      console.log("Auth state updated successfully");
+      console.log("Auth state updated successfully - loading set to false");
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error("Error checking user status:", error);
       setUserRole(null);
       setUserName(null);
@@ -89,22 +97,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    const checkUserStatusAndSetStateWrapper = async (session: Session | null) => {
+      if (mounted) {
+        await checkUserStatusAndSetState(session);
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, "User:", session?.user?.email);
-        await checkUserStatusAndSetState(session);
+        await checkUserStatusAndSetStateWrapper(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("Initial session check:", session?.user?.email);
-      checkUserStatusAndSetState(session);
+      checkUserStatusAndSetStateWrapper(session);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
