@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { TrendingUp, AlertCircle } from "lucide-react";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isPending = searchParams.get("pending") === "true";
@@ -24,6 +24,13 @@ export default function Auth() {
     name: "",
   });
 
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!loading && user && !isPending) {
+      navigate("/");
+    }
+  }, [user, loading, isPending, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,12 +39,11 @@ export default function Auth() {
 
     if (error) {
       toast.error(error.message);
+      setIsLoading(false);
     } else {
       toast.success("Login berhasil!");
-      navigate("/");
+      // Don't navigate here - let useEffect handle it after auth state is updated
     }
-
-    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
