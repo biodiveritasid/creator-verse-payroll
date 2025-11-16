@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TrendingUp, TrendingDown, Plus, Upload, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
 import { z } from "zod";
@@ -37,7 +37,6 @@ export default function Keuangan() {
     keterangan: "",
     proof_link: ""
   });
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchLedger();
@@ -53,11 +52,7 @@ export default function Keuangan() {
       if (error) throw error;
       setLedgerEntries(data as any || []);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -80,10 +75,7 @@ export default function Keuangan() {
 
       if (error) throw error;
 
-      toast({
-        title: "Berhasil",
-        description: "Transaksi berhasil ditambahkan"
-      });
+      toast.success("Transaksi berhasil ditambahkan");
 
       setDialogOpen(false);
       setFormData({
@@ -96,11 +88,7 @@ export default function Keuangan() {
       });
       fetchLedger();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     }
   };
 
@@ -187,11 +175,7 @@ export default function Keuangan() {
       }
 
       if (errors.length > 0) {
-        toast({
-          title: "Validasi Gagal",
-          description: `${errors.length} baris error. Pertama: ${errors[0]}`,
-          variant: "destructive"
-        });
+        toast.error(`Validasi Gagal: ${errors.length} baris error. Pertama: ${errors[0]}`);
         return;
       }
 
@@ -205,19 +189,12 @@ export default function Keuangan() {
 
       if (error) throw error;
 
-      toast({
-        title: "Berhasil",
-        description: `${validEntries.length} transaksi berhasil diimpor`
-      });
+      toast.success(`${validEntries.length} transaksi berhasil diimpor`);
 
       fetchLedger();
       e.target.value = "";
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error: " + error.message);
     }
   };
 
