@@ -7,7 +7,9 @@ import { DollarSign, TrendingUp, Users, Clock } from "lucide-react";
 export default function Dashboard() {
   const { user, userRole } = useAuth();
 
-  const { data: stats } = useQuery({
+  console.log("Dashboard - user:", user?.email, "userRole:", userRole);
+
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ["dashboard-stats", user?.id, userRole],
     queryFn: async () => {
       if (!user) return null;
@@ -79,6 +81,8 @@ export default function Dashboard() {
     },
     enabled: !!user && !!userRole,
   });
+
+  console.log("Dashboard stats:", stats, "isLoading:", isLoading, "error:", error);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
