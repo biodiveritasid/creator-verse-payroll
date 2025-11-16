@@ -39,24 +39,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(session.user);
     setLoading(true);
 
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.warn("Auth check timeout - setting loading to false");
-      setLoading(false);
-    }, 5000);
-
     try {
-      // Fetch profile data which contains role and status
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("name, role, status")
-        .eq("id", session.user.id)
-        .single();
+      console.log("Fetching profile for user:", session.user.id);
       
-      clearTimeout(timeoutId);
+      // Fetch profile data with retry logic
+      let profileData = null;
+      let profileError = null;
+      let retries = 3;
+      
+      while (retries > 0 && !profileData) {
+        const result = await supabase
+          .from("profiles")
+          .select("name, role, status")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        
+        profileData = result.data;
+        profileError = result.error;
+        
+        if (profileError || !profileData) {
+          console.warn(`Profile fetch attempt ${4 - retries} failed, retrying...`, profileError);
+          retries--;
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } else {
+          break;
+        }
+      }
+      
+      console.log("Profile fetch result:", { profileData, profileError });
       
       if (profileError) {
-        console.error("Error fetching profile:", profileError);
+        console.error("Error fetching profile after retries:", profileError);
+        setUserRole(null);
+        setUserName(null);
+        setLoading(false);
+        return;
+      }
+      
+      if (!profileData) {
+        console.error("No profile data found for user after retries");
         setUserRole(null);
         setUserName(null);
         setLoading(false);
@@ -75,11 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      setUserRole(profileData?.role ?? null);
-      setUserName(profileData?.name ?? null);
+      console.log("Setting user role:", profileData.role, "name:", profileData.name);
+      setUserRole(profileData.role);
+      setUserName(profileData.name);
       setLoading(false);
+      console.log("Auth state updated successfully");
     } catch (error) {
-      clearTimeout(timeoutId);
       console.error("Error checking user status:", error);
       setUserRole(null);
       setUserName(null);
